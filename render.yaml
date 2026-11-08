@@ -1,0 +1,40 @@
+# Robô Global v2 — deploy no Render (Blueprint).
+# Banco: use o Postgres do Supabase (Project Settings → Database → Connection string, modo "Session pooler").
+services:
+  - type: web
+    name: robo-global-api
+    runtime: python
+    rootDir: api
+    plan: starter            # o plano gratuito "dorme": o 1º acesso demora e webhooks podem atrasar
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_TOKENS        # formato nome:token,nome2:token2 (tokens com 16+ caracteres)
+        sync: false
+      - key: HOTMART_HOTTOK      # copie o "hottok" do painel de webhooks da Hotmart
+        sync: false
+      - key: WEBHOOK_TOKEN
+        generateValue: true
+      - key: VISITOR_HASH_SALT
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://www.roboglobal.com.br,https://roboglobal.com.br,https://robo-global-web.onrender.com
+
+  - type: web
+    name: robo-global-web
+    runtime: static
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://robo-global-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
