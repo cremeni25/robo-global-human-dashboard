@@ -499,3 +499,66 @@ def ver_aquisicao(request: Request, db: Session = Depends(get_db), _: str = Depe
 def rodar_aquisicao(request: Request, background: BackgroundTasks, actor: str = Depends(require_admin)):
     background.add_task(executar_ciclo, request.app.state.sessionmaker, request.app.state.settings, actor)
     return {"status": "iniciado", "mensagem": "Ciclo em execucao; acompanhe em Aquisicao em alguns minutos."}
+
+
+# ------------------------------------------------------------------ fontes universais (qualquer rede/loja)
+
+class FonteIn(BaseModel):
+    rede: str = Field(min_length=2, max_length=40)       # ex.: cj, impact, rakuten, admitad, lomadee, loja-x
+    url: str = Field(min_length=12, max_length=2000)     # URL https do feed (CSV, XML Google ou YML)
+    anunciante: str = Field(default="", max_length=200)  # se o feed é de uma única loja
+    subid: str = Field(default="", max_length=40, pattern=r"^[A-Za-z0-9_]*$")  # ex.: sid (CJ), subId1 (Impact), u1 (Rakuten)
+    mercado: str = Field(default="BR", max_length=10)
+    idioma: str = Field(default="pt", max_length=10)
+    moeda: str = Field(default="BRL", max_length=3)
+    afiliado: bool = True  # o feed vem de programa em que você já foi aceito
+
+
+def _mascara(url: str) -> str:
+    from urllib.parse import urlsplit
+    p = urlsplit(url)
+    return f"{p.scheme}://{p.netloc}/…" if (p.query or len(p.path) > 20) else url
+
+
+def _fontes(db: Session) -> tuple[Configuracao, list[dict[str, Any]]]:
+    from ..aquisicao import FONTES_KEY
+    row = db.get(Configuracao, FONTES_KEY)
+    if row is None:
+        row = Configuracao(key=FONTES_KEY, value={"lista": []})
+        db.add(row)
+    return row, list(row.value.get("lista", []))
+
+
+@router.get("/fontes")
+def listar_fontes(request: Request, db: Session = Depends(get_db), _: str = Depends(require_admin)):
+    _, lista = _fontes(db)
+    env = request.app.state.settings.fontes_feeds
+    return {"painel": [{**{k: v for k, v in f.items() if k != "url"}, "id": i, "url": _mascara(f["url"])}
+                       for i, f in enumerate(lista)],
+            "ambiente": [{"rede": f.get("rede"), "url": _mascara(f["url"])} for f in env]}
+
+
+@router.post("/fontes", status_code=201)
+def adicionar_fonte(payload: FonteIn, db: Session = Depends(get_db), actor: str = Depends(require_admin)):
+    if not is_safe_url(payload.url):
+        raise HTTPException(status_code=422, detail="A URL do feed precisa comecar com https://")
+    row, lista = _fontes(db)
+    if any(f["url"] == payload.url for f in lista):
+        raise HTTPException(status_code=409, detail="Esta fonte ja esta cadastrada")
+    lista.append({**payload.model_dump(), "ativa": True})
+    row.value = {"lista": lista}
+    auditar(db, actor, "fonte.adicionada", "fonte", payload.rede, {"rede": payload.rede, "url": _mascara(payload.url)})
+    db.commit()
+    return {"status": "OK", "total": len(lista), "mensagem": "Fonte cadastrada; entra no proximo ciclo (ou clique em Rodar agora)."}
+
+
+@router.delete("/fontes/{indice}")
+def remover_fonte(indice: int, db: Session = Depends(get_db), actor: str = Depends(require_admin)):
+    row, lista = _fontes(db)
+    if not 0 <= indice < len(lista):
+        raise HTTPException(status_code=404, detail="Fonte nao encontrada")
+    removida = lista.pop(indice)
+    row.value = {"lista": lista}
+    auditar(db, actor, "fonte.removida", "fonte", removida.get("rede", ""), {"url": _mascara(removida["url"])})
+    db.commit()
+    return {"status": "OK"}
