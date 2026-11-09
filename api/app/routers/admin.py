@@ -5,10 +5,10 @@ import csv
 import io
 from typing import Any, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -18,9 +18,11 @@ from ..core import (
     subnicho_visivel,
 )
 from ..db import get_db
+from ..aquisicao import ESTADO_KEY, aplicar_mapeamentos, executar_ciclo
 from ..inteligencia import aplicar_decisao, demanda_dores, gerar_decisoes, metricas_ofertas, resumo_humano
 from ..models import (
-    Auditoria, Conversao, Decisao, Dor, DorOferta, Lead, Nicho, Oferta, Subnicho, new_id,
+    Anunciante, Auditoria, Configuracao, Conversao, Decisao, Dor, DorOferta, Lead, MapeamentoCategoria,
+    Nicho, Oferta, Subnicho, new_id,
 )
 from ..security import require_admin
 from .webhooks import ConversaoPayload
@@ -181,8 +183,23 @@ def _check_url(url: Optional[str]):
 
 
 @router.get("/ofertas")
-def listar_ofertas(db: Session = Depends(get_db), _: str = Depends(require_admin)):
-    return {"data": [_row(o) for o in db.scalars(select(Oferta).order_by(Oferta.title))]}
+def listar_ofertas(db: Session = Depends(get_db), _: str = Depends(require_admin),
+                   q: str = Query(default="", max_length=100), source: str = Query(default="", max_length=30),
+                   anunciante_id: str = Query(default="", max_length=36),
+                   page: int = Query(default=1, ge=1), limit: int = Query(default=50, ge=1, le=500)):
+    query = select(Oferta)
+    if q.strip():
+        term = f"%{q.strip()}%"
+        query = query.where(or_(Oferta.title.ilike(term), Oferta.category.ilike(term), Oferta.provider.ilike(term)))
+    if source == "manual":
+        query = query.where(Oferta.source == "manual")
+    elif source:
+        query = query.where(Oferta.source != "manual")
+    if anunciante_id:
+        query = query.where(Oferta.anunciante_id == anunciante_id)
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    rows = db.scalars(query.order_by(Oferta.title).offset((page - 1) * limit).limit(limit))
+    return {"total": total, "page": page, "data": [_row(o) for o in rows]}
 
 
 @router.post("/ofertas", status_code=201)
@@ -382,3 +399,103 @@ def auditoria(limit: int = Query(default=200, ge=1, le=1000), db: Session = Depe
               _: str = Depends(require_admin)):
     rows = db.scalars(select(Auditoria).order_by(Auditoria.created_at.desc()).limit(limit))
     return {"data": [_row(a) for a in rows]}
+
+
+# ------------------------------------------------------------------ escala: anunciantes, regras, aquisição
+
+class AnunciantePatch(BaseModel):
+    approved: Optional[bool] = None
+    auto_publish: Optional[bool] = None
+    notes: Optional[str] = Field(default=None, max_length=2000)
+
+
+@router.get("/anunciantes")
+def listar_anunciantes(db: Session = Depends(get_db), _: str = Depends(require_admin)):
+    counts = dict(db.execute(select(Oferta.anunciante_id, func.count()).where(Oferta.active.is_(True))
+                             .group_by(Oferta.anunciante_id)).all())
+    rows = db.scalars(select(Anunciante).order_by(Anunciante.membership, Anunciante.name))
+    return {"data": [{**_row(a), "liberado": a.liberado, "produtos_ativos": counts.get(a.id, 0)} for a in rows]}
+
+
+@router.patch("/anunciantes/{anunciante_id}")
+def editar_anunciante(anunciante_id: str, payload: AnunciantePatch, db: Session = Depends(get_db),
+                      actor: str = Depends(require_admin)):
+    """Aprovar um anunciante = você revisou os termos dele uma vez.
+    Todos os produtos dele vão ao ar (se a rede confirmar a afiliação)."""
+    a = db.get(Anunciante, anunciante_id)
+    if not a:
+        raise HTTPException(status_code=404, detail="Anunciante nao encontrado")
+    changes = payload.model_dump(exclude_unset=True)
+    for k, v in changes.items():
+        setattr(a, k, v)
+    if "auto_publish" in changes:
+        db.query(Oferta).filter(Oferta.anunciante_id == a.id).update({"published": a.auto_publish})
+    auditar(db, actor, "anunciante.editado", "anunciante", a.id, {**changes, "nome": a.name})
+    db.commit()
+    return {**_row(a), "liberado": a.liberado}
+
+
+@router.get("/categorias")
+def categorias(db: Session = Depends(get_db), _: str = Depends(require_admin),
+               limit: int = Query(default=100, ge=1, le=1000)):
+    """Categorias dos produtos importados e quantos ainda não têm dor ligada."""
+    ligados = select(DorOferta.oferta_id)
+    rows = db.execute(select(Oferta.category, func.count(), func.count().filter(Oferta.id.not_in(ligados)))
+                      .where(Oferta.active.is_(True), Oferta.category != "")
+                      .group_by(Oferta.category).order_by(func.count().desc()).limit(limit)).all()
+    return {"data": [{"category": c, "produtos": n, "sem_dor": sem} for c, n, sem in rows]}
+
+
+class MapeamentoIn(BaseModel):
+    termo: str = Field(min_length=2, max_length=200)
+    campo: Literal["category", "title"] = "category"
+    dor_id: str
+
+
+@router.get("/mapeamentos")
+def listar_mapeamentos(db: Session = Depends(get_db), _: str = Depends(require_admin)):
+    out = []
+    for m in db.scalars(select(MapeamentoCategoria).order_by(MapeamentoCategoria.created_at.desc())):
+        dor = db.get(Dor, m.dor_id)
+        out.append({**_row(m), "dor": dor.title if dor else ""})
+    return {"data": out}
+
+
+@router.post("/mapeamentos", status_code=201)
+def criar_mapeamento(payload: MapeamentoIn, db: Session = Depends(get_db), actor: str = Depends(require_admin)):
+    if not db.get(Dor, payload.dor_id):
+        raise HTTPException(status_code=404, detail="Dor nao encontrada")
+    m = MapeamentoCategoria(id=new_id(), termo=payload.termo.strip(), campo=payload.campo, dor_id=payload.dor_id)
+    db.add(m)
+    auditar(db, actor, "mapeamento.criado", "mapeamento", m.id, payload.model_dump())
+    _commit(db, "Esta regra ja existe")
+    vinculos = aplicar_mapeamentos(db, m.id)
+    return {**_row(m), "vinculos_criados": vinculos}
+
+
+@router.delete("/mapeamentos/{mapeamento_id}")
+def remover_mapeamento(mapeamento_id: str, db: Session = Depends(get_db), actor: str = Depends(require_admin)):
+    m = db.get(MapeamentoCategoria, mapeamento_id)
+    if not m:
+        raise HTTPException(status_code=404, detail="Regra nao encontrada")
+    auditar(db, actor, "mapeamento.removido", "mapeamento", m.id, {"termo": m.termo})
+    db.delete(m)
+    db.commit()
+    return {"status": "OK", "observacao": "Vinculos ja criados foram mantidos"}
+
+
+@router.get("/aquisicao")
+def ver_aquisicao(request: Request, db: Session = Depends(get_db), _: str = Depends(require_admin)):
+    s = request.app.state.settings
+    row = db.get(Configuracao, ESTADO_KEY)
+    return {"configuracao": {"feeds_awin": len(s.awin_feed_urls),
+                             "api_awin": bool(s.awin_publisher_id and s.awin_api_token),
+                             "automatica": s.aquisicao_automatica,
+                             "intervalo_horas": s.aquisicao_intervalo_horas},
+            "ultimo_ciclo": row.value if row else None}
+
+
+@router.post("/aquisicao/executar", status_code=202)
+def rodar_aquisicao(request: Request, background: BackgroundTasks, actor: str = Depends(require_admin)):
+    background.add_task(executar_ciclo, request.app.state.sessionmaker, request.app.state.settings, actor)
+    return {"status": "iniciado", "mensagem": "Ciclo em execucao; acompanhe em Aquisicao em alguns minutos."}

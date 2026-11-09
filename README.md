@@ -2,7 +2,19 @@
 
 Sistema para **ligar necessidades reais de pessoas a soluções que geram receita**, com tudo medido, rastreado e auditável. A máquina mede e recomenda; **uma pessoa decide**.
 
-Esta versão substitui os 7 repositórios anteriores por **um único sistema limpo**. O que valia a pena foi reaproveitado, e o que estava duplicado, simulado ou sem uso foi retirado. O que saiu, o que ficou e por quê está em [docs/MIGRACAO.md](docs/MIGRACAO.md).
+Esta versão une os 7 repositórios e o **Core V1** (motor de aquisição Awin, branch `rebuild/core-v1` do repositório `robo`) num **único sistema limpo**. O que valia a pena foi reaproveitado, e o que estava duplicado, simulado ou sem uso foi retirado. O que saiu, o que ficou e por quê está em [docs/MIGRACAO.md](docs/MIGRACAO.md).
+
+## Escala sem cadastro manual
+
+O motor de aquisição (`api/app/aquisicao.py`) roda sozinho a cada 6 horas:
+
+1. importa os **feeds de produtos** das redes (milhares de itens; hoje, a Awin);
+2. cria e atualiza **anunciantes** e produtos, e tira do ar o que saiu do feed;
+3. liga produtos às dores por **regras de categoria** definidas uma vez;
+4. confere na rede **de quais anunciantes você é afiliado aprovado**;
+5. **sincroniza vendas e comissões** e atribui cada uma ao clique de origem.
+
+A decisão humana é **uma por anunciante** (revisar os termos do programa) e **uma por categoria** (em qual dor ela aparece). Nunca é por produto.
 
 ## Como gera dinheiro
 
@@ -32,13 +44,16 @@ api/    FastAPI + SQLAlchemy (PostgreSQL/Supabase ou SQLite local)
   app/models.py         modelo de dados único (tabelas rg_*)
   app/core.py           regras de publicação, pausa geral do sistema e auditoria
   app/conversions.py    registro financeiro idempotente e webhook Hotmart
+  app/aquisicao.py      ciclo automático: feeds, anunciantes, regras, afiliações, vendas
+  app/conectores/       conectores de redes (awin.py, vindo do Core V1)
+  app/migracao_legado.py  importa uma vez os dados antigos (sql/002 e sql/003)
   app/inteligencia.py   métricas, demanda e recomendações explicáveis
   app/routers/          public.py, webhooks.py, admin.py
-  sql/                  001_schema.sql (gerado) e 002_importar_catalogo_legado.sql
-  tests/                16 testes de ponta a ponta (SQLite e PostgreSQL)
+  sql/                  001_schema.sql (gerado), 002 (catálogo legado), 003 (Core V1)
+  tests/                22 testes de ponta a ponta (SQLite e PostgreSQL)
 web/    React + Vite: site público (PT, EN, ES) e painel de operação em /admin
 docs/   MIGRACAO.md (o que mudou) e OPERACAO.md (como operar e monetizar)
-render.yaml             deploy da API e do site no Render
+render.yaml             configuração alvo dos 2 serviços que ficam no Render
 ```
 
 ## Rodar localmente

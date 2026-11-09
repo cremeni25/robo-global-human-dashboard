@@ -12,16 +12,16 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..core import (
-    dor_visivel, nicho_visivel, nichos_publicos, oferta_visivel, ordenar, sistema,
-    subnicho_visivel,
+    dor_visivel, nicho_visivel, nichos_publicos, oferta_visivel, ordenar, select_ofertas_visiveis,
+    sistema, subnicho_visivel,
 )
 from ..db import get_db
-from ..models import Clique, Dor, Lead, Nicho, Oferta, Subnicho
+from ..models import Alias, Clique, Dor, DorOferta, Lead, Nicho, Oferta, Subnicho
 
 router = APIRouter()
 
@@ -42,6 +42,7 @@ def _oferta(o: Oferta) -> dict[str, Any]:
     return {"id": o.id, "title": o.title, "description": o.description,
             "translations": o.translations or {}, "kind": o.kind, "provider": o.provider,
             "market": o.market, "language": o.language, "image_url": o.image_url,
+            "price": float(o.price) if o.price is not None else None, "currency": o.currency,
             "url": f"/r/{o.id}"}
 
 
@@ -82,19 +83,37 @@ def dores(subnicho_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/public/dores/{dor_id}/solucoes")
-def solucoes(dor_id: str, db: Session = Depends(get_db)):
+def solucoes(dor_id: str, db: Session = Depends(get_db), limit: int = Query(default=24, ge=1, le=100)):
     dor = db.get(Dor, _uuid(dor_id))
     if not dor_visivel(dor):
         raise HTTPException(status_code=404, detail="Dor nao encontrada")
-    vinculos = sorted((v for v in dor.vinculos if oferta_visivel(v.oferta)),
-                      key=lambda v: (-v.priority, v.oferta.title.lower()))
-    return _lista([_oferta(v.oferta) for v in vinculos])
+    q = (select_ofertas_visiveis().join(DorOferta, DorOferta.oferta_id == Oferta.id)
+         .where(DorOferta.dor_id == dor.id).order_by(DorOferta.priority.desc(), Oferta.title))
+    total = db.scalar(select(func.count()).select_from(q.subquery()))
+    items = [_oferta(o) for o in db.scalars(q.limit(limit))]
+    return {"status": "OK", "total": total, "data": items}
 
 
 @router.get("/public/ofertas")
-def ofertas(db: Session = Depends(get_db)):
-    items = [o for o in db.scalars(select(Oferta).order_by(Oferta.title)) if oferta_visivel(o)]
-    return _lista([_oferta(o) for o in items])
+def ofertas(db: Session = Depends(get_db), q: str = Query(default="", max_length=100),
+            dor: Optional[str] = Query(default=None, max_length=36),
+            language: str = Query(default="", max_length=10), market: str = Query(default="", max_length=10),
+            page: int = Query(default=1, ge=1, le=10_000), limit: int = Query(default=48, ge=1, le=100)):
+    """Catálogo público paginado (preparado para centenas de milhares de itens)."""
+    query = select_ofertas_visiveis()
+    if q.strip():
+        term = f"%{q.strip()}%"
+        query = query.where(or_(Oferta.title.ilike(term), Oferta.category.ilike(term),
+                                Oferta.provider.ilike(term), Oferta.description.ilike(term)))
+    if dor:
+        query = query.join(DorOferta, DorOferta.oferta_id == Oferta.id).where(DorOferta.dor_id == _uuid(dor))
+    if language:
+        query = query.where(Oferta.language.ilike(f"{language}%"))
+    if market:
+        query = query.where(Oferta.market == market.upper())
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    rows = db.scalars(query.order_by(Oferta.title).offset((page - 1) * limit).limit(limit))
+    return {"status": "OK", "total": total, "page": page, "limit": limit, "data": [_oferta(o) for o in rows]}
 
 
 def _destino(url: str, param: Optional[str], click_id: str) -> str:
@@ -106,6 +125,7 @@ def _destino(url: str, param: Optional[str], click_id: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
 
 
+@router.get("/go/{oferta_id}", include_in_schema=False)
 @router.get("/r/{oferta_id}")
 def redirecionar(oferta_id: str, request: Request, db: Session = Depends(get_db),
                  d: Optional[str] = Query(default=None, max_length=36),
@@ -113,7 +133,11 @@ def redirecionar(oferta_id: str, request: Request, db: Session = Depends(get_db)
                  utm_medium: str = Query(default="", max_length=120),
                  utm_campaign: str = Query(default="", max_length=120)):
     """Único caminho de saída para um parceiro: valida, registra o clique e redireciona."""
-    oferta = db.get(Oferta, _uuid(oferta_id))
+    oid = _uuid(oferta_id)
+    oferta = db.get(Oferta, oid)
+    if oferta is None:  # links antigos do Core V1 continuam funcionando
+        alias = db.get(Alias, oid)
+        oferta = db.get(Oferta, alias.oferta_id) if alias else None
     if not oferta_visivel(oferta):
         raise HTTPException(status_code=404, detail="Oferta indisponivel")
     if not sistema(db)["ativo"]:

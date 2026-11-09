@@ -35,9 +35,11 @@ on conflict do nothing;
 
 insert into rg_ofertas (id, title, description, translations, kind, platform, provider, destination_url,
                         subid_param, external_product_id, market, language, currency,
-                        commission_estimate, image_url, active, published, created_at, updated_at)
-select so.id::text, so.nome, coalesce(so.descricao, ''), '{}'::json, 'afiliado', 'manual', '',
-       so.link_afiliado, null, null, 'BR', 'pt', 'BRL', 0, '', true, false, now(), now()
+                        commission_estimate, image_url, price, category, source, anunciante_id, last_seen_at,
+                        active, published, created_at, updated_at)
+select so.id::text, left(so.nome, 200), coalesce(so.descricao, ''), '{}'::json, 'afiliado', 'manual', '',
+       so.link_afiliado, null, null, 'BR', 'pt', 'BRL', 0, '', null, '', 'legado', null, null,
+       true, false, now(), now()
 from public.solucoes so
 where coalesce(so.ativo, false) and so.link_afiliado like 'https://%'
 on conflict do nothing;

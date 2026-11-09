@@ -5,6 +5,7 @@ administrativa e os webhooks ficam fechados (fail closed).
 """
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass, field
 
@@ -32,6 +33,20 @@ def _database_url() -> str:
     if url.startswith("postgresql://"):
         url = "postgresql+psycopg://" + url[len("postgresql://"):]
     return url
+
+
+def _feed_urls() -> list[str]:
+    urls: list[str] = []
+    single = os.getenv("AWIN_FEED_URL", "").strip()
+    if single:
+        urls.append(single)
+    try:
+        extra = json.loads(os.getenv("AWIN_FEED_URLS", "[]") or "[]")
+        if isinstance(extra, list):
+            urls.extend(str(u).strip() for u in extra if str(u).strip())
+    except ValueError:
+        pass
+    return list(dict.fromkeys(urls))
 
 
 def _admin_tokens() -> dict[str, str]:
@@ -64,6 +79,14 @@ class Settings:
     hotmart_hottok: str = field(default_factory=lambda: os.getenv("HOTMART_HOTTOK", "").strip())
     webhook_token: str = field(default_factory=lambda: os.getenv("WEBHOOK_TOKEN", "").strip())
     visitor_salt: str = field(default_factory=lambda: os.getenv("VISITOR_HASH_SALT", "robo-global"))
+    # Aquisição automática (Awin). Sem credenciais, o ciclo simplesmente pula a etapa.
+    awin_publisher_id: str = field(default_factory=lambda: os.getenv("AWIN_PUBLISHER_ID", "").strip())
+    awin_api_token: str = field(default_factory=lambda: os.getenv("AWIN_API_TOKEN", "").strip())
+    awin_feed_urls: list[str] = field(default_factory=_feed_urls)
+    aquisicao_automatica: bool = field(default_factory=lambda: os.getenv("AQUISICAO_AUTOMATICA", "1") == "1")
+    aquisicao_intervalo_horas: float = field(default_factory=lambda: _float("AQUISICAO_INTERVALO_HORAS", 6))
+    # Importa uma vez os dados do catálogo legado e do Core V1 (mesmo banco Supabase)
+    importar_legado: bool = field(default_factory=lambda: os.getenv("IMPORTAR_LEGADO", "1") == "1")
     # Parâmetros da inteligência (recomendações sempre aprovadas por um humano)
     min_cliques_decisao: int = field(default_factory=lambda: _int("MIN_CLIQUES_DECISAO", 100))
     epc_alvo: float = field(default_factory=lambda: _float("EPC_ALVO", 0.50))

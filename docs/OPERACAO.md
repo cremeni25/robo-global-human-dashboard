@@ -2,18 +2,35 @@
 
 O Robô Global não "fica rico sozinho". Ele organiza, rastreia e aponta para onde o esforço humano rende mais. Este é o caminho prático.
 
-## 1. Colocar no ar (uma vez, cerca de 1 hora)
+## 1. Colocar no ar (troca nos serviços que já existem)
 
-1. **Banco:** no Supabase, em Project Settings → Database, copie a *connection string* (modo **Session pooler**).
-2. **Render:** crie um Blueprint apontando para este repositório (`render.yaml`). Ele cria a API e o site. Preencha:
-   - `DATABASE_URL`: a connection string do passo 1;
-   - `ADMIN_TOKENS`: `seu-nome:um-token-longo-e-aleatorio` (um par por pessoa da operação, separados por vírgula);
-   - `HOTMART_HOTTOK`: preencha no passo 4.
-   - Ou então substitua o serviço `robo-global-api-v2` atual por esta API. Assim o domínio e o site antigo continuam funcionando durante a troca.
-3. **Catálogo:** depois do primeiro start da API (que cria as tabelas), rode `api/sql/002_importar_catalogo_legado.sql` no SQL Editor do Supabase.
-4. **Hotmart:** em Ferramentas → Webhook, cadastre `https://SUA-API/webhooks/hotmart`, versão 2.0, com os eventos de compra (aprovada, completa, reembolsada, chargeback, cancelada). Copie o *hottok* para `HOTMART_HOTTOK`.
-5. **Domínio:** aponte `roboglobal.com.br` para o site e confira se ele está em `CORS_ORIGINS`.
-6. Abra `https://SEU-SITE/admin` e entre com seu token.
+A migração reaproveita os serviços e domínios atuais. Nada novo é criado.
+
+1. **robo-global-api-v2** (api.roboglobal.com.br):
+   - repositório `cremeni25/robo-global-human-dashboard`, diretório raiz `api`;
+   - build `pip install -r requirements.txt`; start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`; health check `/health`;
+   - variáveis: copiar `DATABASE_URL`, `HOTMART_HOTTOK`, `AWIN_PUBLISHER_ID` e `AWIN_FEED_URL` do core-v1; criar `ADMIN_TOKENS` (`seu-nome:token-longo`), `WEBHOOK_TOKEN` e `VISITOR_HASH_SALT`; gerar um **novo** `AWIN_API_TOKEN` (o atual é recusado pela Awin).
+   - No primeiro start, a API cria as tabelas `rg_*` e **importa sozinha** o catálogo antigo e os dados do core-v1, uma única vez.
+2. **robo-global-frontend** (www.roboglobal.com.br): mesmo repositório, diretório raiz `web`, build `npm ci && npm run build`, pasta publicada `dist`, `VITE_API_URL=https://api.roboglobal.com.br`.
+3. **Hotmart:** o endereço antigo `/v1/webhooks/hotmart` continua aceito. Para usar o novo, troque para `https://api.roboglobal.com.br/webhooks/hotmart`.
+4. Depois de conferir que tudo funciona: desligar **robo-global-core-v1**, **robo-global-api** (web e worker), **robo-global-cms**, **robo-global-dashboard** e **robo-global-landing**.
+5. Abra `https://www.roboglobal.com.br/admin` e entre com seu token.
+
+### Token da API Awin (passo único, 5 minutos)
+
+1. Entre em **ui.awin.com** com sua conta de publisher.
+2. No menu da conta, abra **API Credentials** (ou acesse `ui.awin.com/awin-api`).
+3. Gere o token, copie e salve como `AWIN_API_TOKEN` no robo-global-api-v2.
+
+Sem esse token, os produtos continuam sendo importados, mas o sistema não consegue confirmar afiliações nem trazer vendas da Awin. O painel mostra isso na aba **Aquisição**.
+
+## 1.1 Escalar o catálogo (uma vez por anunciante, uma vez por categoria)
+
+1. **Aquisição → Rodar agora** (ou aguarde o ciclo automático de 6 horas).
+2. **Anunciantes:** os que mostram "aprovado" na coluna de afiliação são programas em que a Awin já aceitou você. Leia os termos do programa na Awin e clique em **aprovar termos**: todos os produtos dele vão ao ar.
+3. **Mais anunciantes = mais produtos.** Na Awin, em *Advertisers → Join Programmes*, candidate-se a anunciantes do seu público. Cada aprovação deles libera o catálogo inteiro no próximo ciclo.
+4. **Categorias → dores:** ligue cada categoria à dor certa. Produtos novos dessa categoria entram sozinhos daí em diante.
+5. **Mais feeds:** em *Toolbox → Create-a-Feed*, inclua os anunciantes aprovados. Para vários feeds, use `AWIN_FEED_URLS` com uma lista JSON de URLs.
 
 ## 2. Cadastrar a primeira oferta que paga
 

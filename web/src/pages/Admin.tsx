@@ -8,7 +8,7 @@ import { API_URL } from "../config";
 
 const TOKEN_KEY = "rg_admin_token";
 type Json = Record<string, any>;
-type Tab = "geral" | "catalogo" | "ofertas" | "vendas" | "leads" | "sistema";
+type Tab = "geral" | "aquisicao" | "catalogo" | "ofertas" | "vendas" | "leads" | "sistema";
 
 function readToken() { try { return sessionStorage.getItem(TOKEN_KEY) || ""; } catch { return ""; } }
 
@@ -48,7 +48,7 @@ export default function Admin() {
 
   if (!token) return <Login onToken={t => { try { sessionStorage.setItem(TOKEN_KEY, t); } catch { /* sem armazenamento */ } setToken(t); }} />;
 
-  const tabs: [Tab, string][] = [["geral", "Visão geral"], ["catalogo", "Catálogo"], ["ofertas", "Ofertas"], ["vendas", "Vendas"], ["leads", "Leads"], ["sistema", "Sistema"]];
+  const tabs: [Tab, string][] = [["geral", "Visão geral"], ["aquisicao", "Aquisição"], ["catalogo", "Catálogo"], ["ofertas", "Ofertas"], ["vendas", "Vendas"], ["leads", "Leads"], ["sistema", "Sistema"]];
   return <div className="adm">
     <div className="adm-top"><h1>Operação Robô Global</h1>
       <button className="adm-link" onClick={() => { try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* sem armazenamento */ } setToken(""); }}>Sair</button></div>
@@ -56,6 +56,7 @@ export default function Admin() {
     {msg && <p className={msg.ok ? "adm-ok" : "adm-err"} role="status">{msg.text}</p>}
     <div key={tab + version}>
       {tab === "geral" && <Geral run={run} />}
+      {tab === "aquisicao" && <Aquisicao run={run} />}
       {tab === "catalogo" && <Catalogo run={run} />}
       {tab === "ofertas" && <Ofertas run={run} />}
       {tab === "vendas" && <Vendas run={run} />}
@@ -189,7 +190,9 @@ function Catalogo({ run }: { run: Run }) {
 const emptyOffer = { id: "", title: "", destination_url: "https://", kind: "afiliado", platform: "hotmart", provider: "", subid_param: "sck", external_product_id: "", commission_estimate: 0, description: "", image_url: "", market: "BR", language: "pt" };
 
 function Ofertas({ run }: { run: Run }) {
-  const [list, reload] = useData(run, "/admin/ofertas");
+  const [busca, setBusca] = useState("");
+  const [termo, setTermo] = useState("");
+  const [list, reload] = useData(run, "/admin/ofertas?limit=100&q=" + encodeURIComponent(termo));
   const [f, setF] = useState<Json>(emptyOffer);
   const set = (k: string) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   async function salvar(e: FormEvent) {
@@ -217,7 +220,9 @@ function Ofertas({ run }: { run: Run }) {
         <div className="adm-actions"><button className="adm-btn">{f.id ? "Salvar" : "Criar"}</button>{f.id && <button type="button" className="adm-link" onClick={() => setF(emptyOffer)}>Cancelar</button>}</div>
       </form>
     </Card>
-    <Card title="Ofertas">
+    <Card title={`Ofertas (${list?.total ?? 0})`}>
+      <form className="adm-form" onSubmit={e => { e.preventDefault(); setTermo(busca); }}><input placeholder="Buscar por título, categoria ou fornecedor" value={busca} onChange={e => setBusca(e.target.value)} /><button className="adm-btn">Buscar</button></form>
+      <p className="adm-muted">Mostrando até 100. Produtos importados das redes são controlados pelo anunciante (aba Aquisição), não um a um.</p>
       {list?.data?.length ? <div className="adm-scroll"><table className="adm-table"><thead><tr><th>Título</th><th>Tipo</th><th>Plataforma</th><th>Estado</th><th></th></tr></thead><tbody>
         {list.data.map((o: Json) => <tr key={o.id}><td>{o.title}<div className="adm-muted adm-url">{o.destination_url}</div></td><td>{o.kind}</td><td>{o.platform}</td>
           <td><button className={o.published ? "adm-pill on" : "adm-pill"} onClick={() => patch(o, { published: !o.published }, o.published ? "Oferta despublicada." : "Oferta publicada.")}>{o.published ? "publicada" : "rascunho"}</button>
@@ -305,6 +310,54 @@ function Sistema({ run }: { run: Run }) {
       {aud?.data?.length ? <div className="adm-scroll"><table className="adm-table"><thead><tr><th>Data</th><th>Pessoa</th><th>Ação</th><th>Detalhe</th></tr></thead><tbody>
         {aud.data.map((a: Json) => <tr key={a.id}><td>{dt(a.created_at)}</td><td>{a.actor}</td><td>{a.action}</td><td className="adm-muted">{JSON.stringify(a.detail)}</td></tr>)}
       </tbody></table></div> : <p className="adm-muted">Sem registros.</p>}
+    </Card>
+  </>;
+}
+
+/* ------------------------------------------------------------ aquisição (escala) */
+function Aquisicao({ run }: { run: Run }) {
+  const [estado, reloadEstado] = useData(run, "/admin/aquisicao");
+  const [anunciantes, reloadAnunciantes] = useData(run, "/admin/anunciantes");
+  const [categorias, reloadCategorias] = useData(run, "/admin/categorias");
+  const [regras, reloadRegras] = useData(run, "/admin/mapeamentos");
+  const [cat] = useData(run, "/admin/catalogo");
+  const [escolha, setEscolha] = useState<Record<string, string>>({});
+  const reload = () => { reloadEstado(); reloadAnunciantes(); reloadCategorias(); reloadRegras(); };
+  const dores: Json[] = (cat?.data || []).flatMap((n: Json) => n.subnichos.flatMap((s: Json) => s.dores.map((d: Json) => ({ id: d.id, path: `${n.title} › ${s.title} › ${d.title}` }))));
+  const cfg = estado?.configuracao;
+  const ciclo = estado?.ultimo_ciclo;
+  const patch = async (a: Json, body: Json, text: string) => { await run(`/admin/anunciantes/${a.id}`, { method: "PATCH", body: JSON.stringify(body) }, text); reload(); };
+  const ligar = async (categoria: string) => {
+    const dor_id = escolha[categoria];
+    if (!dor_id) return;
+    await run("/admin/mapeamentos", { method: "POST", body: JSON.stringify({ termo: categoria, campo: "category", dor_id }) }, r => `Regra criada: ${r.vinculos_criados} produto(s) ligados agora; os próximos entram sozinhos.`);
+    reload();
+  };
+  return <>
+    <Card title="Motor de aquisição automática">
+      {cfg && <p>Feeds Awin configurados: <b>{cfg.feeds_awin}</b> · API Awin: <b>{cfg.api_awin ? "configurada" : "não configurada"}</b> · Automático: <b>{cfg.automatica ? `a cada ${cfg.intervalo_horas} h` : "desligado"}</b></p>}
+      <button className="adm-btn" onClick={async () => { await run("/admin/aquisicao/executar", { method: "POST" }, "Ciclo iniciado. Clique na aba Aquisição em 1–2 minutos para ver o resultado."); }}>Rodar agora</button>
+      {ciclo ? <div><p className="adm-muted">Último ciclo: {dt(ciclo.fim)}</p>
+        <ul className="adm-frases">{Object.entries(ciclo.etapas as Json).map(([k, v]) => <li key={k}><b>{k}</b>: {Object.entries(v as Json).filter(([, x]) => x !== "" && x != null).map(([kk, x]) => `${kk}=${x}`).join(" · ")}</li>)}</ul></div>
+        : <p className="adm-muted">Nenhum ciclo executado ainda.</p>}
+    </Card>
+    <Card title="Anunciantes (uma decisão por empresa, não por produto)">
+      <p className="adm-muted">Os produtos de um anunciante vão ao ar quando: a rede confirma que você é afiliado aprovado (<b>joined</b>) <b>e</b> você aprova os termos dele aqui, uma única vez. Leia os termos do programa na Awin antes de aprovar.</p>
+      {anunciantes?.data?.length ? <div className="adm-scroll"><table className="adm-table"><thead><tr><th>Anunciante</th><th>Afiliação na rede</th><th>Produtos ativos</th><th>Termos</th><th>No ar?</th></tr></thead><tbody>
+        {anunciantes.data.map((a: Json) => <tr key={a.id}><td>{a.name}<div className="adm-muted">{a.platform} #{a.external_id}</div></td>
+          <td>{a.membership === "joined" ? <b className="adm-tag adm-tag-ok">aprovado</b> : <span className="adm-muted">{a.membership === "not_joined" ? "não afiliado" : a.membership === "unknown" ? "não verificado" : a.membership}</span>}</td>
+          <td>{Number(a.produtos_ativos).toLocaleString("pt-BR")}</td>
+          <td><button className={a.approved ? "adm-pill on" : "adm-pill"} onClick={() => patch(a, { approved: !a.approved }, a.approved ? "Aprovação retirada: produtos saem do ar." : "Termos aprovados.")}>{a.approved ? "aprovados" : "aprovar termos"}</button></td>
+          <td>{a.liberado ? <b className="adm-tag adm-tag-ok">sim</b> : <span className="adm-muted">não</span>}</td></tr>)}
+      </tbody></table></div> : <p className="adm-muted">Nenhum anunciante ainda. Rode o ciclo de aquisição.</p>}
+    </Card>
+    <Card title="Categorias → dores (regras automáticas)">
+      <p className="adm-muted">Ligue uma categoria a uma dor uma vez: todos os produtos dela, atuais e futuros, aparecem naquela dor. Produtos sem dor continuam no catálogo e na busca.</p>
+      {categorias?.data?.length ? <div className="adm-scroll"><table className="adm-table"><thead><tr><th>Categoria</th><th>Produtos</th><th>Sem dor</th><th>Ligar à dor</th></tr></thead><tbody>
+        {categorias.data.map((c: Json) => <tr key={c.category}><td>{c.category}</td><td>{c.produtos}</td><td>{c.sem_dor}</td>
+          <td className="adm-actions"><select value={escolha[c.category] || ""} onChange={e => setEscolha({ ...escolha, [c.category]: e.target.value })}><option value="">— dor —</option>{dores.map(d => <option key={d.id} value={d.id}>{d.path}</option>)}</select><button className="adm-btn" onClick={() => ligar(c.category)}>Ligar</button></td></tr>)}
+      </tbody></table></div> : <p className="adm-muted">Sem categorias importadas ainda.</p>}
+      {regras?.data?.length > 0 && <><h3>Regras ativas</h3><ul className="adm-frases">{regras.data.map((m: Json) => <li key={m.id}>"{m.termo}" ({m.campo}) → {m.dor} <button className="adm-link" onClick={async () => { await run(`/admin/mapeamentos/${m.id}`, { method: "DELETE" }, "Regra removida (vínculos já criados mantidos)."); reload(); }}>remover</button></li>)}</ul></>}
     </Card>
   </>;
 }

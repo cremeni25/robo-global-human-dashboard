@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import urlsplit
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
-from .models import Auditoria, Configuracao, Dor, Nicho, Oferta, Subnicho
+from .models import Anunciante, Auditoria, Configuracao, Dor, Nicho, Oferta, Subnicho
 
 TEST_PREFIXES = ("teste-", "test-")
 
@@ -39,7 +39,26 @@ def dor_visivel(d: Dor | None) -> bool:
 
 
 def oferta_visivel(o: Oferta | None) -> bool:
-    return bool(o and o.active and o.published and is_safe_url(o.destination_url))
+    """Ativa, publicada, link https e, se vier de uma rede, anunciante liberado
+    (você é afiliado aprovado E uma pessoa aprovou os termos)."""
+    if not (o and o.active and o.published and is_safe_url(o.destination_url)):
+        return False
+    return o.anunciante is None or o.anunciante.liberado
+
+
+def filtro_oferta_visivel():
+    """Mesma regra de oferta_visivel, em SQL, para catálogos com milhares de itens.
+    Use com select(Oferta).outerjoin(Anunciante, Oferta.anunciante_id == Anunciante.id)."""
+    return and_(
+        Oferta.active.is_(True), Oferta.published.is_(True),
+        Oferta.destination_url.like("https://%"),
+        or_(Oferta.anunciante_id.is_(None),
+            and_(Anunciante.approved.is_(True), Anunciante.membership == "joined")),
+    )
+
+
+def select_ofertas_visiveis():
+    return select(Oferta).outerjoin(Anunciante, Oferta.anunciante_id == Anunciante.id).where(filtro_oferta_visivel())
 
 
 # ---------------------------------------------------------------- estado

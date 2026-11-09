@@ -86,3 +86,8 @@ def conversao_generica(payload: ConversaoPayload, request: Request, db: Session 
     r = registrar(db, payload.to_in("webhook"))
     return {"status": "registrado" if r.alterada else "duplicado", "conversao_id": r.conversao.id,
             "situacao": r.conversao.status}
+
+
+# Endereço antigo do Core V1, já cadastrado na Hotmart: continua aceito.
+legacy_router = APIRouter()
+legacy_router.add_api_route("/v1/webhooks/hotmart", hotmart, methods=["POST"], include_in_schema=False)

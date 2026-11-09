@@ -17,10 +17,10 @@ from .db import make_engine, make_sessionmaker
 from .models import Base
 from .routers import admin, public, webhooks
 
-VERSION = "2.0.0"
+VERSION = "2.1.0"
 
 
-def create_app(settings: Optional[Settings] = None) -> FastAPI:
+def create_app(settings: Optional[Settings] = None, start_scheduler: bool = True) -> FastAPI:
     settings = settings or Settings()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     engine = make_engine(settings.database_url)
@@ -36,7 +36,16 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                        allow_headers=["Authorization", "Content-Type"])
     app.include_router(public.router)
     app.include_router(webhooks.router)
+    app.include_router(webhooks.legacy_router)
     app.include_router(admin.router)
+
+    if settings.importar_legado:
+        from .migracao_legado import importar_legado
+        importar_legado(engine, app.state.sessionmaker)
+
+    from .aquisicao import iniciar_agendador
+    if start_scheduler:
+        iniciar_agendador(app.state.sessionmaker, settings)
 
     log = logging.getLogger("robo_global")
     log.info("Robo Global %s | admin=%s | hotmart=%s | webhook=%s", VERSION,

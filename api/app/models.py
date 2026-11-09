@@ -65,10 +65,37 @@ class Dor(_Editorial, Base):
     vinculos: Mapped[list["DorOferta"]] = relationship(back_populates="dor")
 
 
+class Anunciante(Base):
+    """Empresa/programa dentro de uma rede (ex.: anunciante Awin).
+
+    A rede informa se você é afiliado aprovado (membership). Uma pessoa revisa
+    os termos UMA vez por anunciante (approved); a partir daí todos os produtos
+    dele entram e saem do ar automaticamente.
+    """
+    __tablename__ = "rg_anunciantes"
+    __table_args__ = (UniqueConstraint("platform", "external_id", name="uq_rg_anunciante_externo"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    platform: Mapped[str] = mapped_column(String(40))
+    external_id: Mapped[str] = mapped_column(String(80))
+    name: Mapped[str] = mapped_column(String(200), default="")
+    membership: Mapped[str] = mapped_column(String(20), default="unknown")  # joined|pending|not_joined|unknown
+    membership_checked_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    auto_publish: Mapped[bool] = mapped_column(Boolean, default=True)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    ofertas: Mapped[list["Oferta"]] = relationship(back_populates="anunciante")
+
+    @property
+    def liberado(self) -> bool:
+        return self.approved and self.membership == "joined"
+
+
 class Oferta(Base):
     """Qualquer forma de monetizar uma dor: afiliado, produto próprio,
     serviço próprio ou parceiro que paga por lead."""
     __tablename__ = "rg_ofertas"
+    __table_args__ = (UniqueConstraint("platform", "external_product_id", name="uq_rg_oferta_externa"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text, default="")
@@ -86,11 +113,36 @@ class Oferta(Base):
     currency: Mapped[str] = mapped_column(String(3), default="BRL")
     commission_estimate: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     image_url: Mapped[str] = mapped_column(String(2000), default="")
-    active: Mapped[bool] = mapped_column(Boolean, default=True)
-    published: Mapped[bool] = mapped_column(Boolean, default=False)
+    price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    category: Mapped[str] = mapped_column(String(300), default="", index=True)
+    source: Mapped[str] = mapped_column(String(30), default="manual")  # manual|awin_feed|legado
+    anunciante_id: Mapped[Optional[str]] = mapped_column(ForeignKey("rg_anunciantes.id"), nullable=True, index=True)
+    last_seen_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    published: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
     vinculos: Mapped[list["DorOferta"]] = relationship(back_populates="oferta")
+    anunciante: Mapped[Optional[Anunciante]] = relationship(back_populates="ofertas")
+
+
+class MapeamentoCategoria(Base):
+    """Regra definida UMA vez por uma pessoa: produtos cuja categoria (ou título)
+    contém `termo` são ligados automaticamente à dor — hoje e nas próximas importações."""
+    __tablename__ = "rg_mapeamentos"
+    __table_args__ = (UniqueConstraint("termo", "dor_id", name="uq_rg_mapeamento"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    termo: Mapped[str] = mapped_column(String(200))
+    campo: Mapped[str] = mapped_column(String(20), default="category")  # category|title
+    dor_id: Mapped[str] = mapped_column(ForeignKey("rg_dores.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class Alias(Base):
+    """Ids antigos (oportunidades do Core V1) que continuam redirecionando."""
+    __tablename__ = "rg_aliases"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    oferta_id: Mapped[str] = mapped_column(ForeignKey("rg_ofertas.id"))
 
 
 class DorOferta(Base):

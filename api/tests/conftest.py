@@ -34,7 +34,7 @@ def settings():
 
 @pytest.fixture()
 def client(settings):
-    return TestClient(create_app(settings), follow_redirects=False)
+    return TestClient(create_app(settings, start_scheduler=False), follow_redirects=False)
 
 
 @pytest.fixture()

@@ -8,7 +8,7 @@ Auditoria feita em 08/11/2026. Critério: **fica o que funciona e serve à evolu
 |---|---|---|
 | `robo` (backend em produção, `main.py` com 2.162 linhas) | Regras reaproveitadas, código reescrito | `api/` |
 | `robo-global-frontend` | **Reaproveitado** (site público) | `web/` |
-| Core V1 (`robo-global-core-v1.onrender.com`, código não acessível) | Substituído | `api/` (`/public/*` e `/r/{id}`) |
+| Core V1 (`robo`, branch `rebuild/core-v1`) | **Unido**: conectores e dados reaproveitados | `api/app/conectores/awin.py`, `api/app/aquisicao.py`, `sql/003` |
 | `robo-global-api` | Removido | — |
 | `robo-global` | Removido | — |
 | `robo-global-dashboard` | Removido | Painel `/admin` |
@@ -28,6 +28,10 @@ Auditoria feita em 08/11/2026. Critério: **fica o que funciona e serve à evolu
 - A ideia de "leitura humana", agora em frases geradas só de dados reais.
 
 **Do `robo-global-frontend`:** Home, Sobre, Nichos, Dores, Ofertas, os três idiomas, o visual e o carregamento com tempo limite (`catalogRequest.ts`, com testes). Também as traduções editoriais (`catalogCopy.ts`), que continuam valendo porque a migração preserva os IDs.
+
+**Do Core V1:** leitura do feed Awin (com remoção do filtro de conteúdo adulto e restrição de host), consulta de afiliações aprovadas, a regra de só publicar produtos de anunciantes aprovados, e a normalização robusta do webhook Hotmart (comissões de afiliado, eventos de reembolso parcial e de espera). Também os dados já importados: produtos, anunciantes, cliques, vendas e os links `/r/{oportunidade}` que já circulam, que continuam funcionando. O endereço de webhook `/v1/webhooks/hotmart` também segue aceito. Acrescentado: **sincronização automática de vendas pela API de transações da Awin**, que o Core não tinha.
+
+Do Core V1 **não** foram trazidos: o leitor de convites pelo Gmail (exige um token OAuth do Gmail; pode voltar depois), o catálogo Monetizze (a API não fornece o link de afiliado, então não dá para publicar automaticamente) e as tabelas de demanda e oportunidade com pontuação manual, substituídas pelas dores e pelas regras de categoria.
 
 ## O que foi retirado e por quê
 
@@ -51,7 +55,7 @@ Auditoria feita em 08/11/2026. Critério: **fica o que funciona e serve à evolu
 
 ## Banco de dados
 
-A v2 cria tabelas novas com prefixo `rg_` no **mesmo Supabase** e **não apaga nada** do legado. Para trazer o catálogo, rode `api/sql/002_importar_catalogo_legado.sql` no SQL Editor do Supabase. O script é idempotente e já foi testado em PostgreSQL 16.
+A v2 cria tabelas novas com prefixo `rg_` no **mesmo Supabase** e **não apaga nada** do legado. No primeiro start em PostgreSQL, a API roda **sozinha** `sql/002` (catálogo legado) e `sql/003` (Core V1). Os scripts são idempotentes e foram testados em PostgreSQL 16, e o resultado fica no painel. Para desligar, use `IMPORTAR_LEGADO=0`.
 
 - Nichos, subnichos e dores entram com os mesmos IDs e o mesmo estado de publicação.
 - Soluções antigas entram como ofertas **despublicadas**: revise link, plataforma, parâmetro de rastreio e ID do produto antes de publicar.

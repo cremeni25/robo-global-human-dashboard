@@ -120,12 +120,15 @@ HOTMART_STATUS = {
     "PURCHASE_APPROVED": "approved",
     "PURCHASE_COMPLETE": "approved",
     "PURCHASE_REFUNDED": "refunded",
+    "PURCHASE_PARTIALLY_REFUNDED": "refunded",
     "PURCHASE_CHARGEBACK": "chargeback",
     "PURCHASE_CANCELED": "canceled",
+    "PURCHASE_CANCELLED": "canceled",
     "PURCHASE_EXPIRED": "canceled",
     "PURCHASE_PROTEST": "pending",
     "PURCHASE_DELAYED": "pending",
     "PURCHASE_BILLET_PRINTED": "pending",
+    "PURCHASE_WAITING_PAYMENT": "pending",
 }
 
 
@@ -147,12 +150,18 @@ def normalizar_hotmart(payload: dict[str, Any]) -> Optional[ConversaoIn]:
     price = purchase.get("price") or {}
     commissions = data.get("commissions") or []
     commission = Decimal("0")
+    if isinstance(commissions, dict):
+        commissions = [commissions]
     if isinstance(commissions, list):
-        by_source = {str(c.get("source", "")).upper(): c for c in commissions if isinstance(c, dict)}
-        chosen = by_source.get("AFFILIATE") or by_source.get("PRODUCER")
-        if chosen:
-            commission = to_decimal(chosen.get("value"))
+        items = [c for c in commissions if isinstance(c, dict)]
+        affiliate = [c for c in items if "AFFILIATE" in str(c.get("source", "")).upper()]
+        producer = [c for c in items if "PRODUCER" in str(c.get("source", "")).upper()]
+        for c in (affiliate or producer):
+            commission += to_decimal(c.get("value"))
     origin = purchase.get("origin") or {}
+    tracking = purchase.get("tracking") or {}
+    click = (origin.get("sck") or tracking.get("source_sck") or tracking.get("source")
+             or tracking.get("external_code") or "")
     return ConversaoIn(
         platform="hotmart",
         external_id=str(transaction),
@@ -162,7 +171,7 @@ def normalizar_hotmart(payload: dict[str, Any]) -> Optional[ConversaoIn]:
         currency=str(price.get("currency_value") or "BRL"),
         occurred_at=_ms_to_dt(purchase.get("approved_date") or purchase.get("order_date")),
         product_id=str((data.get("product") or {}).get("id") or ""),
-        click_id=str(origin.get("sck") or ""),
+        click_id=str(click)[:36],
         source="webhook",
         raw=payload,
     )

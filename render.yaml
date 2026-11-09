@@ -1,39 +1,47 @@
-# Robô Global v2 — deploy no Render (Blueprint).
-# Banco: use o Postgres do Supabase (Project Settings → Database → Connection string, modo "Session pooler").
+# Robô Global — configuração alvo dos 2 serviços que FICAM no Render.
+# A migração reaproveita os serviços existentes (mesmos domínios):
+#   robo-global-api-v2   (api.roboglobal.com.br)  → esta API (pasta api/)
+#   robo-global-frontend (www.roboglobal.com.br)  → este site (pasta web/)
+# Passo a passo em docs/OPERACAO.md. Variáveis marcadas "copiar do core-v1" já existem lá.
 services:
   - type: web
-    name: robo-global-api
+    name: robo-global-api-v2
     runtime: python
     rootDir: api
-    plan: starter            # o plano gratuito "dorme": o 1º acesso demora e webhooks podem atrasar
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
-      - key: DATABASE_URL
+      - key: DATABASE_URL          # copiar do core-v1 (Postgres do Supabase)
         sync: false
-      - key: ADMIN_TOKENS        # formato nome:token,nome2:token2 (tokens com 16+ caracteres)
+      - key: ADMIN_TOKENS          # nome:token (16+ caracteres), um por pessoa
         sync: false
-      - key: HOTMART_HOTTOK      # copie o "hottok" do painel de webhooks da Hotmart
+      - key: HOTMART_HOTTOK        # copiar do core-v1
+        sync: false
+      - key: AWIN_PUBLISHER_ID     # copiar do core-v1
+        sync: false
+      - key: AWIN_API_TOKEN        # gerar novo em ui.awin.com > API credentials (o atual falha)
+        sync: false
+      - key: AWIN_FEED_URL         # copiar do core-v1
         sync: false
       - key: WEBHOOK_TOKEN
         generateValue: true
       - key: VISITOR_HASH_SALT
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://www.roboglobal.com.br,https://roboglobal.com.br,https://robo-global-web.onrender.com
+        value: https://www.roboglobal.com.br,https://roboglobal.com.br,https://robo-global-frontend.onrender.com
 
   - type: web
-    name: robo-global-web
+    name: robo-global-frontend
     runtime: static
     rootDir: web
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://robo-global-api.onrender.com
+        value: https://api.roboglobal.com.br
     routes:
       - type: rewrite
         source: /*

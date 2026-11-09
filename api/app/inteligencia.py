@@ -9,12 +9,12 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from .config import Settings
-from .core import auditar, dor_visivel, oferta_visivel
-from .models import Clique, Conversao, Decisao, Dor, DorOferta, Lead, Oferta, utcnow
+from .core import auditar, dor_visivel, filtro_oferta_visivel, oferta_visivel
+from .models import Anunciante, Clique, Conversao, Decisao, Dor, DorOferta, Lead, Oferta, utcnow
 
 RECOMENDACOES = ("COLETAR_DADOS", "ESCALAR", "MANTER", "OTIMIZAR", "PAUSAR")
 
@@ -39,7 +39,11 @@ def metricas_ofertas(db: Session, days: int | None = None) -> list[dict[str, Any
         conv.setdefault(oferta_id, {})[status] = (int(count), Decimal(commission), Decimal(gross))
 
     rows = []
-    for o in db.scalars(select(Oferta).order_by(Oferta.title)):
+    # Com milhares de produtos importados, só entram na análise as ofertas com
+    # atividade (cliques/vendas) e as cadastradas à mão.
+    ativos = set(clicks) | set(conv)
+    q = select(Oferta).where(or_(Oferta.source == "manual", Oferta.id.in_(ativos or {""}))).order_by(Oferta.title)
+    for o in db.scalars(q):
         c = conv.get(o.id, {})
         approved, receita, bruto = c.get("approved", (0, Decimal(0), Decimal(0)))
         devolvidas = sum(c.get(s, (0,))[0] for s in ("refunded", "chargeback"))
@@ -66,15 +70,19 @@ def demanda_dores(db: Session) -> list[dict[str, Any]]:
         Clique.dor_id.is_not(None)).group_by(Clique.dor_id)).all())
     leads = dict(db.execute(select(Lead.dor_id, func.count()).where(
         Lead.dor_id.is_not(None)).group_by(Lead.dor_id)).all())
+    visiveis = dict(db.execute(
+        select(DorOferta.dor_id, func.count()).join(Oferta, Oferta.id == DorOferta.oferta_id)
+        .outerjoin(Anunciante, Oferta.anunciante_id == Anunciante.id)
+        .where(filtro_oferta_visivel()).group_by(DorOferta.dor_id)).all())
     rows = []
     for d in db.scalars(select(Dor)):
-        ofertas = [v.oferta for v in d.vinculos if oferta_visivel(v.oferta)]
+        n_ofertas = int(visiveis.get(d.id, 0))
         n_leads, n_clicks = int(leads.get(d.id, 0)), int(clicks.get(d.id, 0))
         rows.append({
             "dor_id": d.id, "title": d.title, "visivel": dor_visivel(d),
             "subnicho": d.subnicho.title, "nicho": d.subnicho.nicho.title,
-            "cliques": n_clicks, "leads": n_leads, "ofertas_visiveis": len(ofertas),
-            "oportunidade": n_leads > 0 and not ofertas,
+            "cliques": n_clicks, "leads": n_leads, "ofertas_visiveis": n_ofertas,
+            "oportunidade": n_leads > 0 and not n_ofertas,
         })
     rows.sort(key=lambda r: (not r["oportunidade"], -(r["leads"] * 5 + r["cliques"])))
     return rows
@@ -154,7 +162,8 @@ def resumo_humano(db: Session, s: Settings) -> dict[str, Any]:
     leads_30 = db.scalar(select(func.count()).select_from(Lead).where(Lead.created_at >= _since(30))) or 0
     pendentes = db.scalar(select(func.count()).select_from(Decisao).where(Decisao.status == "pendente")) or 0
     nao_atribuidas = db.scalar(select(func.count()).select_from(Conversao).where(Conversao.oferta_id.is_(None))) or 0
-    visiveis = sum(1 for r in m30 if r["visivel"])
+    from .core import select_ofertas_visiveis
+    visiveis = db.scalar(select(func.count()).select_from(select_ofertas_visiveis().subquery())) or 0
     oportunidades = [d for d in demanda_dores(db) if d["oportunidade"]]
 
     frases = []
