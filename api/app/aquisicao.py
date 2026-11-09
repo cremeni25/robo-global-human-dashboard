@@ -21,7 +21,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from .config import Settings
-from .conectores import awin
+from .conectores import awin, feed_universal
 from .conversions import ConversaoIn, registrar
 from .core import auditar
 from .models import Anunciante, Configuracao, DorOferta, MapeamentoCategoria, Oferta, new_id, utcnow
@@ -34,7 +34,8 @@ _lock = threading.Lock()
 # ------------------------------------------------------------------ importação
 
 def importar_produtos(db: Session, produtos: Iterable[awin.ProdutoFeed], *, platform: str = "awin",
-                      batch: int = 1000) -> dict[str, int]:
+                      batch: int = 1000, membership: str = "unknown", subid_param: Optional[str] = awin.CLICKREF_PARAM,
+                      market: str = "BR") -> dict[str, int]:
     inicio = utcnow()
     anunciantes = {a.external_id: a for a in db.scalars(select(Anunciante).where(Anunciante.platform == platform))}
     existentes = {o.external_product_id: o for o in db.scalars(select(Oferta).where(Oferta.platform == platform))}
@@ -54,7 +55,7 @@ def importar_produtos(db: Session, produtos: Iterable[awin.ProdutoFeed], *, plat
         if a is None:
             a = Anunciante(id=new_id(), platform=platform, external_id=p.merchant_id,
                            name=p.merchant_name or f"Anunciante {p.merchant_id}",
-                           membership="unknown", approved=False, auto_publish=True)
+                           membership=membership, approved=False, auto_publish=True)
             db.add(a)
             anunciantes[p.merchant_id] = a
             resumo["anunciantes_novos"] += 1
@@ -67,8 +68,8 @@ def importar_produtos(db: Session, produtos: Iterable[awin.ProdutoFeed], *, plat
                       provider=a.name, language=p.language, last_seen_at=inicio, active=True)
         if o is None:
             o = Oferta(id=new_id(), platform=platform, external_product_id=key, kind="afiliado",
-                       source=f"{platform}_feed", subid_param=awin.CLICKREF_PARAM,
-                       anunciante_id=a.id, published=a.auto_publish, market="BR", **fields)
+                       source=f"{platform}_feed", subid_param=subid_param,
+                       anunciante_id=a.id, published=a.auto_publish, market=market, **fields)
             db.add(o)
             existentes[key] = o
             novos.append(o.id)
@@ -185,6 +186,25 @@ def executar_ciclo(SessionLocal: sessionmaker, s: Settings, actor: str = "agenda
                 etapas["feeds"] = {"fontes": len(s.awin_feed_urls), "falhas": erros, **totais}
             else:
                 etapas["feeds"] = {"status": "nao_configurado", "falta": "AWIN_FEED_URL"}
+            # 1b. fontes universais: qualquer rede, loja ou fornecedor com feed
+            fontes = todas_as_fontes(db, s)
+            if fontes:
+                resumo_fontes = []
+                for f in fontes:
+                    rede = feed_universal.slug(str(f.get("rede") or "feed"))
+                    try:
+                        with feed_universal.baixar(f["url"], fetch) as resp:
+                            r = importar_produtos(
+                                db, feed_universal.ler(resp, f), platform=rede,
+                                # A rede só entrega feed de programas em que você já é afiliado.
+                                membership="joined" if f.get("afiliado", True) else "unknown",
+                                subid_param=(f.get("subid") or None), market=str(f.get("mercado") or "BR").upper()[:10])
+                        resumo_fontes.append({"rede": rede, "novos": r["novos"], "atualizados": r["atualizados"],
+                                              "desativados": r["desativados"], "lidos": r["lidos"]})
+                    except Exception as exc:
+                        db.rollback()
+                        resumo_fontes.append({"rede": rede, "status": "falhou", "erro": type(exc).__name__})
+                etapas["fontes"] = {"total": len(fontes), "resultado": resumo_fontes}
             # 2. rede (afiliações e vendas)
             if s.awin_publisher_id and s.awin_api_token:
                 client = awin.AwinClient(s.awin_publisher_id, s.awin_api_token, fetch)
@@ -221,8 +241,23 @@ def executar_ciclo(SessionLocal: sessionmaker, s: Settings, actor: str = "agenda
         _lock.release()
 
 
+FONTES_KEY = "fontes"
+
+
+def todas_as_fontes(db: Session, s: Settings) -> list[dict[str, Any]]:
+    """Fontes do ambiente (FONTES_FEEDS) + fontes cadastradas no painel."""
+    row = db.get(Configuracao, FONTES_KEY)
+    painel = [f for f in (row.value.get("lista", []) if row else []) if f.get("ativa", True)]
+    vistos, out = set(), []
+    for f in [*s.fontes_feeds, *painel]:
+        if f.get("url") and f["url"] not in vistos:
+            vistos.add(f["url"])
+            out.append(f)
+    return out
+
+
 def iniciar_agendador(SessionLocal: sessionmaker, s: Settings) -> None:
-    if not s.aquisicao_automatica or not (s.awin_feed_urls or s.awin_api_token):
+    if not s.aquisicao_automatica:
         log.info("aquisicao automatica desligada ou sem fontes configuradas")
         return
 

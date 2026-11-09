@@ -341,6 +341,7 @@ function Aquisicao({ run }: { run: Run }) {
         <ul className="adm-frases">{Object.entries(ciclo.etapas as Json).map(([k, v]) => <li key={k}><b>{k}</b>: {Object.entries(v as Json).filter(([, x]) => x !== "" && x != null).map(([kk, x]) => `${kk}=${x}`).join(" · ")}</li>)}</ul></div>
         : <p className="adm-muted">Nenhum ciclo executado ainda.</p>}
     </Card>
+    <Fontes run={run} onChange={reload} />
     <Card title="Anunciantes (uma decisão por empresa, não por produto)">
       <p className="adm-muted">Os produtos de um anunciante vão ao ar quando: a rede confirma que você é afiliado aprovado (<b>joined</b>) <b>e</b> você aprova os termos dele aqui, uma única vez. Leia os termos do programa na Awin antes de aprovar.</p>
       {anunciantes?.data?.length ? <div className="adm-scroll"><table className="adm-table"><thead><tr><th>Anunciante</th><th>Afiliação na rede</th><th>Produtos ativos</th><th>Termos</th><th>No ar?</th></tr></thead><tbody>
@@ -360,4 +361,34 @@ function Aquisicao({ run }: { run: Run }) {
       {regras?.data?.length > 0 && <><h3>Regras ativas</h3><ul className="adm-frases">{regras.data.map((m: Json) => <li key={m.id}>"{m.termo}" ({m.campo}) → {m.dor} <button className="adm-link" onClick={async () => { await run(`/admin/mapeamentos/${m.id}`, { method: "DELETE" }, "Regra removida (vínculos já criados mantidos)."); reload(); }}>remover</button></li>)}</ul></>}
     </Card>
   </>;
+}
+
+const fonteVazia = { rede: "", url: "", anunciante: "", subid: "", mercado: "BR", idioma: "pt", moeda: "BRL" };
+
+function Fontes({ run, onChange }: { run: Run; onChange: () => void }) {
+  const [lista, reload] = useData(run, "/admin/fontes");
+  const [f, setF] = useState(fonteVazia);
+  const set = (k: string) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+  async function salvar(e: FormEvent) {
+    e.preventDefault();
+    await run("/admin/fontes", { method: "POST", body: JSON.stringify(f) }, r => r.mensagem);
+    setF(fonteVazia); reload(); onChange();
+  }
+  return <Card title="Fontes de produtos (qualquer rede, loja ou fornecedor)">
+    <p className="adm-muted">Cole a URL do feed de produtos (CSV, XML Google Shopping ou YML) de qualquer rede: CJ, Impact, Rakuten, Admitad, Webgains, Tradedoubler, Partnerize, Lomadee, ou de uma loja ou fornecedor parceiro. O motor importa, organiza e publica sozinho a cada ciclo.</p>
+    <form className="adm-form" onSubmit={salvar}>
+      <input required placeholder="Rede (ex.: cj, impact, admitad, loja-x)" value={f.rede} onChange={set("rede")} />
+      <input required type="url" placeholder="URL https do feed" value={f.url} onChange={set("url")} />
+      <input placeholder="Anunciante (se o feed é de uma só loja)" value={f.anunciante} onChange={set("anunciante")} />
+      <input placeholder="Parâmetro de rastreio (CJ: sid · Impact: subId1 · Rakuten: u1 · Admitad: subid)" value={f.subid} onChange={set("subid")} />
+      <input placeholder="Mercado (BR, US, PT…)" value={f.mercado} onChange={set("mercado")} />
+      <input placeholder="Idioma (pt, en, es)" value={f.idioma} onChange={set("idioma")} />
+      <button className="adm-btn">Adicionar fonte</button>
+    </form>
+    {(lista?.painel?.length || lista?.ambiente?.length) ? <table className="adm-table"><thead><tr><th>Rede</th><th>Feed</th><th>Mercado</th><th></th></tr></thead><tbody>
+      {(lista.ambiente || []).map((x: Json, i: number) => <tr key={"e" + i}><td>{x.rede}</td><td className="adm-muted">{x.url}</td><td></td><td className="adm-muted">via Render</td></tr>)}
+      {(lista.painel || []).map((x: Json) => <tr key={x.id}><td>{x.rede}{x.anunciante && <div className="adm-muted">{x.anunciante}</div>}</td><td className="adm-muted">{x.url}</td><td>{x.mercado}</td>
+        <td><button className="adm-link" onClick={async () => { await run(`/admin/fontes/${x.id}`, { method: "DELETE" }, "Fonte removida."); reload(); }}>remover</button></td></tr>)}
+    </tbody></table> : <p className="adm-muted">Nenhuma fonte universal cadastrada ainda (a Awin é configurada à parte).</p>}
+  </Card>;
 }

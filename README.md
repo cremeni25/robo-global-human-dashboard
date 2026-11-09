@@ -8,7 +8,7 @@ Esta versão une os 7 repositórios e o **Core V1** (motor de aquisição Awin, 
 
 O motor de aquisição (`api/app/aquisicao.py`) roda sozinho a cada 6 horas:
 
-1. importa os **feeds de produtos** das redes (milhares de itens; hoje, a Awin);
+1. importa os **feeds de produtos** de **qualquer rede, loja ou fornecedor**: conector nativo da Awin e conector universal (CSV, XML Google Shopping, YML) para CJ, Impact, Rakuten, Admitad, Lomadee, lojas com estoque próprio e outros. Mapa completo em [docs/FONTES_DE_RECEITA.md](docs/FONTES_DE_RECEITA.md);
 2. cria e atualiza **anunciantes** e produtos, e tira do ar o que saiu do feed;
 3. liga produtos às dores por **regras de categoria** definidas uma vez;
 4. confere na rede **de quais anunciantes você é afiliado aprovado**;
@@ -53,12 +53,13 @@ api/    FastAPI + SQLAlchemy (PostgreSQL/Supabase ou SQLite local)
   app/core.py           regras de publicação, pausa geral do sistema e auditoria
   app/conversions.py    registro financeiro idempotente e webhook Hotmart
   app/aquisicao.py      ciclo automático: feeds, anunciantes, regras, afiliações, vendas
-  app/conectores/       conectores de redes (awin.py, vindo do Core V1)
+  app/conectores/       awin.py (nativo, vindo do Core V1) e feed_universal.py (qualquer rede ou loja)
+  app/agentes.py        agentes autônomos: aprovação, taxonomia e decisões
   app/migracao_legado.py  importa uma vez os dados antigos (sql/002 e sql/003)
   app/inteligencia.py   métricas, demanda e recomendações explicáveis
   app/routers/          public.py, webhooks.py, admin.py
   sql/                  001_schema.sql (gerado), 002 (catálogo legado), 003 (Core V1)
-  tests/                22 testes de ponta a ponta (SQLite e PostgreSQL)
+  tests/                27 testes de ponta a ponta (SQLite e PostgreSQL)
 web/    React + Vite: site público (PT, EN, ES) e painel de operação em /admin
 docs/   MIGRACAO.md (o que mudou) e OPERACAO.md (como operar e monetizar)
 render.yaml             configuração alvo dos 2 serviços que ficam no Render

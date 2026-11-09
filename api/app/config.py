@@ -49,6 +49,14 @@ def _feed_urls() -> list[str]:
     return list(dict.fromkeys(urls))
 
 
+def _json_list(name: str) -> list[dict]:
+    try:
+        data = json.loads(os.getenv(name, "[]") or "[]")
+    except ValueError:
+        return []
+    return [d for d in data if isinstance(d, dict) and str(d.get("url", "")).startswith("https://")] if isinstance(data, list) else []
+
+
 def _admin_tokens() -> dict[str, str]:
     """Retorna {token: nome}. Aceita ADMIN_TOKENS="ana:tok1,bruno:tok2"
     e/ou ADMIN_TOKEN="tok" (nome "admin")."""
@@ -83,6 +91,9 @@ class Settings:
     awin_publisher_id: str = field(default_factory=lambda: os.getenv("AWIN_PUBLISHER_ID", "").strip())
     awin_api_token: str = field(default_factory=lambda: os.getenv("AWIN_API_TOKEN", "").strip())
     awin_feed_urls: list[str] = field(default_factory=_feed_urls)
+    # Fontes universais (qualquer rede/loja): JSON [{"rede": "cj", "url": "https://...", ...}].
+    # Também podem ser cadastradas no painel (Aquisição → Fontes), sem mexer no Render.
+    fontes_feeds: list[dict] = field(default_factory=lambda: _json_list("FONTES_FEEDS"))
     aquisicao_automatica: bool = field(default_factory=lambda: os.getenv("AQUISICAO_AUTOMATICA", "1") == "1")
     aquisicao_intervalo_horas: float = field(default_factory=lambda: _float("AQUISICAO_INTERVALO_HORAS", 6))
     # Importa uma vez os dados do catálogo legado e do Core V1 (mesmo banco Supabase)
