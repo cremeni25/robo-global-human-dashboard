@@ -14,7 +14,15 @@ O motor de aquisição (`api/app/aquisicao.py`) roda sozinho a cada 6 horas:
 4. confere na rede **de quais anunciantes você é afiliado aprovado**;
 5. **sincroniza vendas e comissões** e atribui cada uma ao clique de origem.
 
-A decisão humana é **uma por anunciante** (revisar os termos do programa) e **uma por categoria** (em qual dor ela aparece). Nunca é por produto.
+**Agentes autônomos** (`api/app/agentes.py`, ligados por padrão) completam o ciclo sem intervenção humana:
+
+| Agente | O que faz sozinho | Desligar |
+|---|---|---|
+| Aprovação | Libera todo anunciante cuja afiliação a rede confirmou | `AUTO_APROVAR_ANUNCIANTES=0` |
+| Taxonomia | Transforma categorias de produtos em nicho › subnicho › dor publicados e liga os produtos | `AUTO_TAXONOMIA=0` |
+| Decisão | Aplica PAUSAR, ESCALAR e OTIMIZAR conforme os resultados reais | `AUTO_DECISOES=0` |
+
+Guardas que continuam sempre ativas: só vai ao ar produto de anunciante com afiliação confirmada pela rede e com link https; nenhuma dor vazia é publicada; tudo fica na auditoria com o autor "agente"; e o botão de pausa geral vale para tudo.
 
 ## Como gera dinheiro
 

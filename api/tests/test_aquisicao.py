@@ -184,3 +184,42 @@ def test_compatibilidade_com_links_e_webhook_do_core_v1(client, admin, catalogo)
         "commissions": [{"value": 3, "source": "AFFILIATE"}]}}
     r = client.post("/v1/webhooks/hotmart", json=body, headers={"X-HOTMART-HOTTOK": HOTTOK})
     assert r.json()["status"] == "registrado"
+
+
+def test_agentes_autonomos_publicam_sem_intervencao_humana(motor):
+    client, fake, run = motor
+    s = client.app.state.settings
+    s.auto_aprovar_anunciantes = s.auto_taxonomia = s.auto_decisoes = True
+    fake.rows = [produto("1", "111", "Tapete de yoga", "Esporte > Fitness > Yoga"),
+                 produto("2", "111", "Halteres", "Esporte > Fitness > Musculação"),
+                 produto("3", "222", "Panela", "Casa > Cozinha")]
+    r = run()
+    ag = r["etapas"]["agentes"]
+    assert ag["anunciantes_aprovados"] == 1 and ag["categorias_organizadas"] == 2
+    # Loja A (afiliação confirmada) vai ao ar sozinha; Loja B (não afiliada) continua fora.
+    publico = client.get("/public/ofertas").json()
+    assert {o["title"] for o in publico["data"]} == {"Tapete de yoga", "Halteres"}
+    nichos = client.get("/public/nichos").json()["data"]
+    assert [n["title"] for n in nichos] == ["Esporte"]
+    subs = client.get("/public/nichos/esporte/subnichos").json()["data"]
+    dores = client.get(f"/public/subnichos/{subs[0]['id']}/dores").json()["data"]
+    assert sorted(d["title"] for d in dores) == ["Musculação", "Yoga"]
+    yoga = next(d for d in dores if d["title"] == "Yoga")
+    assert [o["title"] for o in client.get(f"/public/dores/{yoga['id']}/solucoes").json()["data"]] == ["Tapete de yoga"]
+    # Segundo ciclo: idempotente, nada duplicado
+    r2 = run()
+    assert r2["etapas"]["agentes"]["categorias_organizadas"] == 0
+    assert len(client.get("/public/nichos").json()["data"]) == 1
+    acoes = {a["action"] for a in client.get("/admin/auditoria").json()["data"] if a["actor"] == "agente"}
+    assert "anunciante.aprovado_auto" in acoes
+
+
+def test_agente_aplica_decisao_sem_humano(admin, catalogo):
+    from app.agentes import decidir
+    s = admin.app.state.settings
+    oid = catalogo["oferta"]["id"]
+    for _ in range(20):
+        admin.get(f"/r/{oid}")
+    with admin.app.state.sessionmaker() as db:
+        assert decidir(db, s)["decisoes_aplicadas"] == 1
+    assert admin.get(f"/r/{oid}").status_code == 404  # pausada pelo agente

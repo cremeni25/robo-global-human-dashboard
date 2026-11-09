@@ -200,6 +200,13 @@ def executar_ciclo(SessionLocal: sessionmaker, s: Settings, actor: str = "agenda
             else:
                 etapas["afiliacoes"] = etapas["vendas"] = {"status": "nao_configurado",
                                                            "falta": "AWIN_PUBLISHER_ID e AWIN_API_TOKEN"}
+            # 3. agentes autônomos (aprovação, taxonomia, decisões)
+            try:
+                from .agentes import executar as executar_agentes
+                etapas["agentes"] = executar_agentes(db, s)
+            except Exception as exc:
+                db.rollback()
+                etapas["agentes"] = {"status": "falhou", "erro": type(exc).__name__}
             resultado = {"inicio": inicio.isoformat(), "fim": utcnow().isoformat(), "etapas": etapas}
             row = db.get(Configuracao, ESTADO_KEY)
             if row:

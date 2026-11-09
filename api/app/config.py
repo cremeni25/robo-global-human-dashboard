@@ -87,6 +87,13 @@ class Settings:
     aquisicao_intervalo_horas: float = field(default_factory=lambda: _float("AQUISICAO_INTERVALO_HORAS", 6))
     # Importa uma vez os dados do catálogo legado e do Core V1 (mesmo banco Supabase)
     importar_legado: bool = field(default_factory=lambda: os.getenv("IMPORTAR_LEGADO", "1") == "1")
+    # Autonomia: agentes que substituem as decisões humanas recorrentes.
+    # AUTO_APROVAR_ANUNCIANTES: anunciante com afiliação confirmada pela rede vai ao ar sozinho.
+    # AUTO_TAXONOMIA: categorias dos produtos viram nicho/subnicho/dor publicados automaticamente.
+    # AUTO_DECISOES: recomendações (PAUSAR/ESCALAR) são aplicadas sem esperar aprovação.
+    auto_aprovar_anunciantes: bool = field(default_factory=lambda: os.getenv("AUTO_APROVAR_ANUNCIANTES", "1") == "1")
+    auto_taxonomia: bool = field(default_factory=lambda: os.getenv("AUTO_TAXONOMIA", "1") == "1")
+    auto_decisoes: bool = field(default_factory=lambda: os.getenv("AUTO_DECISOES", "1") == "1")
     # Parâmetros da inteligência (recomendações sempre aprovadas por um humano)
     min_cliques_decisao: int = field(default_factory=lambda: _int("MIN_CLIQUES_DECISAO", 100))
     epc_alvo: float = field(default_factory=lambda: _float("EPC_ALVO", 0.50))

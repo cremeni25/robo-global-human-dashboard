@@ -28,6 +28,9 @@ def settings():
     s.hotmart_hottok = HOTTOK
     s.webhook_token = WEBHOOK
     s.min_cliques_decisao = 10
+    # Testes do fluxo com aprovação humana; os agentes têm testes próprios.
+    s.auto_aprovar_anunciantes = s.auto_taxonomia = s.auto_decisoes = False
+    s.importar_legado = False
     s.epc_alvo = 0.5
     return s
 
