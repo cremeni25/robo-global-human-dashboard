@@ -94,6 +94,11 @@ class Settings:
     # Fontes universais (qualquer rede/loja): JSON [{"rede": "cj", "url": "https://...", ...}].
     # Também podem ser cadastradas no painel (Aquisição → Fontes), sem mexer no Render.
     fontes_feeds: list[dict] = field(default_factory=lambda: _json_list("FONTES_FEEDS"))
+    # Admitad: com estas credenciais o Robô descobre sozinho lojas aprovadas, feeds e vendas.
+    admitad_base64: str = field(default_factory=lambda: os.getenv("ADMITAD_BASE64", "").strip())
+    admitad_client_id: str = field(default_factory=lambda: os.getenv("ADMITAD_CLIENT_ID", "").strip())
+    # Teto de produtos por loja a cada ciclo (protege o banco: o AliExpress tem milhões).
+    feed_max_produtos: int = field(default_factory=lambda: _int("FEED_MAX_PRODUTOS", 20000))
     aquisicao_automatica: bool = field(default_factory=lambda: os.getenv("AQUISICAO_AUTOMATICA", "1") == "1")
     aquisicao_intervalo_horas: float = field(default_factory=lambda: _float("AQUISICAO_INTERVALO_HORAS", 6))
     # Importa uma vez os dados do catálogo legado e do Core V1 (mesmo banco Supabase)
