@@ -25,7 +25,7 @@ export default function Problema() {
     carregarProblema(slug, c.signal).then(setP).catch(() => { if (!c.signal.aborted) setErro(true); });
     return () => c.abort();
   }, [slug]);
-  useEffect(() => { if (p) document.title = p.titulo[lang] + " · Robô Global"; return () => { document.title = "Robô Global"; }; }, [p, lang]);
+  useEffect(() => { if (p) document.title = p.titulo[lang] + " · Robô Global"; return () => { document.title = "Robô Global · Soluções para o dia a dia"; }; }, [p, lang]);
 
   if (erro || p === null || p === undefined) return <div className="rg-store"><div className="rg-store-inner rg-store-body">
     <p role="status">{erro ? t.error : p === null ? t.missing : t.loading}</p>
@@ -45,13 +45,12 @@ export default function Problema() {
       <section aria-labelledby="escolhas">
         <header className="rg-escolhas-head"><h2 id="escolhas">{t.picks}</h2>
           <button className="rg-share" onClick={() => compartilhar(p.titulo[lang], window.location.origin + "/problema/" + p.slug)}>{t.share}</button></header>
-        <div className="rg-escolhas">{p.escolhas.map(e => {
+        <div className="rg-escolhas">{p.escolhas.map((e, i) => {
           const o = e.oferta; const loja = (o.provider || "").replace(/\s+(WW|BR|Many Geos)$/i, ""); const amazon = loja === "Amazon";
           return <article className="rg-escolha" key={o.id}>
-            <span className="rg-nivel">{e.nivel[lang]}</span>
-            {o.image_url ? <div className="rg-escolha-img"><img src={o.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={ev => { ev.currentTarget.style.visibility = "hidden"; }} /></div>
-              : <div className="rg-escolha-icone" aria-hidden="true">{p.tema_icone}</div>}
-            <h3>{tituloOferta(o, lang)}</h3>
+            <span className="rg-nivel"><b aria-hidden="true">{i + 1}</b> {e.nivel[lang]}</span>
+            {o.image_url && <div className="rg-escolha-img"><img src={o.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={ev => { ev.currentTarget.style.visibility = "hidden"; }} /></div>}
+            <h3 className={o.image_url ? "" : "rg-escolha-titulo"}>{tituloOferta(o, lang)}</h3>
             <p className="rg-motivo">{e.motivo[lang]}</p>
             {preco(o.price, o.currency) && <strong className="rg-card-price">{preco(o.price, o.currency)}</strong>}
             {loja && <small className="rg-loja">{amazon ? t.onAmazon : t.store + " " + loja}</small>}
