@@ -168,6 +168,24 @@ TEMAS: list[dict[str, Any]] = [
      ]},
 ]
 
+# Nome curto de cada caso, para os botões de tema ("Treinar em casa · Roupa para treinar")
+CURTOS: dict[str, dict[str, str]] = {
+    "treinar-em-casa": _t("Treinar em casa", "Home workouts", "Entrenar en casa"),
+    "roupa-de-treino": _t("Roupa para treinar", "Workout clothes", "Ropa para entrenar"),
+    "suplementos": _t("Suplementação", "Supplements", "Suplementos"),
+    "dores-nas-costas": _t("Dores nas costas", "Back pain", "Dolor de espalda"),
+    "acompanhar-peso": _t("Acompanhar o peso", "Tracking weight", "Controlar el peso"),
+    "dormir-melhor": _t("Dormir melhor", "Sleep better", "Dormir mejor"),
+    "relaxar-em-casa": _t("Relaxar depois do dia", "Unwinding", "Relajarte"),
+    "cozinha-organizada": _t("Cozinha organizada", "Tidy kitchen", "Cocina ordenada"),
+    "limpeza-facil": _t("Limpeza fácil", "Easy cleaning", "Limpieza fácil"),
+    "pet-sozinho-em-casa": _t("Pet sozinho em casa", "Pet home alone", "Mascota sola en casa"),
+    "passeio-seguro": _t("Passeio seguro", "Safe walks", "Paseos seguros"),
+    "fone-sem-fio": _t("Fone sem fio", "Wireless earbuds", "Auriculares inalámbricos"),
+    "bateria-do-celular": _t("Bateria do celular", "Phone battery", "Batería del móvil"),
+    "som-para-reunir": _t("Som para reunir", "Sound for gatherings", "Música para reunir"),
+}
+
 _cache: dict[str, Any] = {"ts": 0.0, "data": None}
 _lock = threading.Lock()
 
@@ -231,7 +249,8 @@ def _motivo(o: Oferta, i: int) -> dict[str, str]:
 
 
 def _resumo(tema: dict, p: dict, n: int) -> dict[str, Any]:
-    return {"slug": p["slug"], "titulo": p["titulo"], "resumo": p["resumo"], "tema": tema["slug"], "produtos": n}
+    return {"slug": p["slug"], "titulo": p["titulo"], "curto": CURTOS.get(p["slug"], p["titulo"]),
+            "resumo": p["resumo"], "tema": tema["slug"], "produtos": n}
 
 
 def montar(db: Session, s: Settings) -> dict[str, Any]:
