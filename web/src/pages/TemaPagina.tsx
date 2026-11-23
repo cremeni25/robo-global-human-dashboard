@@ -5,9 +5,9 @@ import { carregarTemas } from "../problemas";
 import type { Tema } from "../problemas";
 
 const copy = {
-  pt: { back: "Todos os temas", lead: "Escolha a situação que mais combina com você.", see: "Ver soluções", loading: "Carregando…", missing: "Este tema não está disponível no momento.", error: "Não foi possível carregar agora." },
-  en: { back: "All topics", lead: "Pick the situation that fits you best.", see: "See solutions", loading: "Loading…", missing: "This topic isn't available right now.", error: "We couldn't load this right now." },
-  es: { back: "Todos los temas", lead: "Elige la situación que más se parece a la tuya.", see: "Ver soluciones", loading: "Cargando…", missing: "Este tema no está disponible ahora.", error: "No pudimos cargar ahora." },
+  pt: { back: "Todos os temas", lead: (x: string) => `O que você quer resolver em ${x}?`, see: (n: number) => `Ver as ${n} opções`, loading: "Carregando…", missing: "Este tema não está disponível no momento.", error: "Não foi possível carregar agora." },
+  en: { back: "All topics", lead: (x: string) => `What do you want to solve in ${x}?`, see: (n: number) => `See the ${n} options`, loading: "Loading…", missing: "This topic isn't available right now.", error: "We couldn't load this right now." },
+  es: { back: "Todos los temas", lead: (x: string) => `¿Qué quieres resolver en ${x}?`, see: (n: number) => `Ver las ${n} opciones`, loading: "Cargando…", missing: "Este tema no está disponible ahora.", error: "No pudimos cargar ahora." },
 };
 
 export default function TemaPagina() {
@@ -25,7 +25,7 @@ export default function TemaPagina() {
   return <div className="rg-store">
     <section className="rg-store-hero"><div className="rg-store-inner">
       <Link className="rg-voltar" to="/">← {t.back}</Link>
-      {tema && <><h1><span aria-hidden="true">{tema.icone}</span> {tema.titulo[lang]}</h1><p>{t.lead}</p></>}
+      {tema && <><h1><span aria-hidden="true">{tema.icone}</span> {tema.titulo[lang]}</h1><p>{t.lead(tema.titulo[lang])}</p></>}
     </div></section>
     <div className="rg-store-inner rg-store-body">
       {erro ? <p role="alert">{t.error}</p>
@@ -35,7 +35,7 @@ export default function TemaPagina() {
           <Link key={p.slug} className="rg-problema-card" to={"/problema/" + p.slug}>
             <strong>{p.titulo[lang]}</strong>
             <span>{p.resumo[lang]}</span>
-            <em>{t.see} →</em>
+            <em>{t.see(p.produtos)} →</em>
           </Link>)}</div>}
     </div>
   </div>;
