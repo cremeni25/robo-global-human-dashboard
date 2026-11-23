@@ -12,7 +12,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import String, cast, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -103,8 +103,14 @@ def ofertas(db: Session = Depends(get_db), q: str = Query(default="", max_length
     query = select_ofertas_visiveis()
     if q.strip():
         term = f"%{q.strip()}%"
+        # Busca também pelos temas (em português, com palavras-chave da IA):
+        # "fone" encontra produtos cadastrados como "Earbud Headphones".
+        temas = (select(DorOferta.oferta_id).join(Dor, Dor.id == DorOferta.dor_id)
+                 .where(Dor.published.is_(True),
+                        or_(Dor.title.ilike(term), cast(Dor.translations, String).ilike(term))))
         query = query.where(or_(Oferta.title.ilike(term), Oferta.category.ilike(term),
-                                Oferta.provider.ilike(term), Oferta.description.ilike(term)))
+                                Oferta.provider.ilike(term), Oferta.description.ilike(term),
+                                Oferta.id.in_(temas)))
     if dor:
         query = query.join(DorOferta, DorOferta.oferta_id == Oferta.id).where(DorOferta.dor_id == _uuid(dor))
     if language:

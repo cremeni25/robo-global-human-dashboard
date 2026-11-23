@@ -111,6 +111,9 @@ class Settings:
     auto_aprovar_anunciantes: bool = field(default_factory=lambda: os.getenv("AUTO_APROVAR_ANUNCIANTES", "1") == "1")
     auto_taxonomia: bool = field(default_factory=lambda: os.getenv("AUTO_TAXONOMIA", "1") == "1")
     auto_decisoes: bool = field(default_factory=lambda: os.getenv("AUTO_DECISOES", "1") == "1")
+    # AUTO_CATALOGO_IA: com ANTHROPIC_API_KEY, a IA traduz e agrupa as categorias em temas em português.
+    auto_catalogo_ia: bool = field(default_factory=lambda: os.getenv("AUTO_CATALOGO_IA", "1") == "1")
+    anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", "").strip(), repr=False)
     # Parâmetros da inteligência (recomendações sempre aprovadas por um humano)
     min_cliques_decisao: int = field(default_factory=lambda: _int("MIN_CLIQUES_DECISAO", 100))
     epc_alvo: float = field(default_factory=lambda: _float("EPC_ALVO", 0.50))
