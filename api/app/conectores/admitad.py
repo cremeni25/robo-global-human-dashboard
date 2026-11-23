@@ -102,6 +102,8 @@ def website_id_do_link(url: str) -> Optional[int]:
 
 def _com_moeda(url: str, moeda: str = "BRL") -> str:
     p = urlsplit(url)
+    if p.scheme == "http":  # a API devolve http://; o mesmo endereço responde em https
+        p = p._replace(scheme="https")
     q = dict(parse_qsl(p.query, keep_blank_values=True))
     q.setdefault("currency", moeda)
     q.setdefault("format", "xml")

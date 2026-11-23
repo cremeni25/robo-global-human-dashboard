@@ -41,13 +41,13 @@ class FakeAdmitad:
             return R(json.dumps({"results": [
                 {"id": 1, "name": "Casa Fácil BR", "connection_status": "active", "feeds_info": [
                     {"name": "Old EN", "xml_link": "https://export.admitad.com/x?feed_id=9&code=z", "admitad_last_update": "2020-01-01T00:00:00"},
-                    {"name": "Main PT", "xml_link": "https://export.admitad.com/x?feed_id=10&code=z", "admitad_last_update": "2026-11-20T00:00:00"}]},
+                    {"name": "Main PT", "xml_link": "http://export.admitad.com/x?feed_id=10&code=z", "admitad_last_update": "2026-11-20T00:00:00"}]},
                 {"id": 2, "name": "Sem Feed WW", "connection_status": "active", "feeds_info": []},
                 {"id": 3, "name": "Pendente", "connection_status": "pending", "feeds_info": [
                     {"name": "x", "xml_link": "https://export.admitad.com/x?feed_id=11"}]},
             ], "_meta": {"count": 3}}))
         if "export.admitad.com" in u:
-            assert "feed_id=10" in u and "currency=BRL" in u
+            assert u.startswith("https://") and "feed_id=10" in u and "currency=BRL" in u
             return R(YML)
         if "/statistics/actions/" in u:
             return R(json.dumps({"results": self.vendas, "_meta": {"count": len(self.vendas)}}))

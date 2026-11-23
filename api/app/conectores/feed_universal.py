@@ -198,6 +198,8 @@ def _ler_xml(buf) -> Iterator[dict[str, str]]:
 
 
 def baixar(url: str, fetch: Fetch = _default_fetch):
+    if url.startswith("http://"):
+        url = "https://" + url[len("http://"):]
     parts = urlsplit(url)
     if parts.scheme != "https" or not parts.hostname:
         raise ValueError("a URL do feed precisa ser https")
