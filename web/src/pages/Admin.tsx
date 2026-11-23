@@ -338,7 +338,7 @@ function Aquisicao({ run }: { run: Run }) {
       {cfg && <p>Feeds Awin configurados: <b>{cfg.feeds_awin}</b> · API Awin: <b>{cfg.api_awin ? "configurada" : "não configurada"}</b> · Automático: <b>{cfg.automatica ? `a cada ${cfg.intervalo_horas} h` : "desligado"}</b></p>}
       <button className="adm-btn" onClick={async () => { await run("/admin/aquisicao/executar", { method: "POST" }, "Ciclo iniciado. Clique na aba Aquisição em 1–2 minutos para ver o resultado."); }}>Rodar agora</button>
       {ciclo ? <div><p className="adm-muted">Último ciclo: {dt(ciclo.fim)}</p>
-        <ul className="adm-frases">{Object.entries(ciclo.etapas as Json).map(([k, v]) => <li key={k}><b>{k}</b>: {Object.entries(v as Json).filter(([, x]) => x !== "" && x != null).map(([kk, x]) => `${kk}=${x}`).join(" · ")}</li>)}</ul></div>
+        <ul className="adm-frases">{Object.entries(ciclo.etapas as Json).map(([k, v]) => <li key={k}><b>{k}</b>: {Object.entries(v as Json).filter(([, x]) => x !== "" && x != null).map(([kk, x]) => `${kk}=${Array.isArray(x) ? x.map(i => typeof i === "object" ? Object.entries(i as Json).map(([a, b]) => `${a}:${b}`).join(" ") : i).join(" | ") : typeof x === "object" ? JSON.stringify(x) : x}`).join(" · ")}</li>)}</ul></div>
         : <p className="adm-muted">Nenhum ciclo executado ainda.</p>}
     </Card>
     <Fontes run={run} onChange={reload} />

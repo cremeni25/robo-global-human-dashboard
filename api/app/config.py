@@ -97,6 +97,7 @@ class Settings:
     # Admitad: com estas credenciais o Robô descobre sozinho lojas aprovadas, feeds e vendas.
     admitad_base64: str = field(default_factory=lambda: os.getenv("ADMITAD_BASE64", "").strip())
     admitad_client_id: str = field(default_factory=lambda: os.getenv("ADMITAD_CLIENT_ID", "").strip())
+    admitad_website_id: str = field(default_factory=lambda: os.getenv("ADMITAD_WEBSITE_ID", "").strip())
     # Teto de produtos por loja a cada ciclo (protege o banco: o AliExpress tem milhões).
     feed_max_produtos: int = field(default_factory=lambda: _int("FEED_MAX_PRODUTOS", 20000))
     aquisicao_automatica: bool = field(default_factory=lambda: os.getenv("AQUISICAO_AUTOMATICA", "1") == "1")

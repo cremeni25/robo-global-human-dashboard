@@ -193,7 +193,7 @@ def executar_ciclo(SessionLocal: sessionmaker, s: Settings, actor: str = "agenda
             if s.admitad_base64 and s.admitad_client_id:
                 try:
                     cliente_admitad = admitad.AdmitadClient(s.admitad_base64, s.admitad_client_id, fetch)
-                    extras, info = descobrir_fontes_admitad(cliente_admitad, fontes)
+                    extras, info = descobrir_fontes_admitad(cliente_admitad, fontes, s.admitad_website_id)
                     fontes = fontes + extras
                     etapas["admitad_lojas"] = info
                 except Exception as exc:
@@ -265,12 +265,21 @@ def _feed_id(url: str) -> str:
     return (parse_qs(urlsplit(url).query).get("feed_id") or [""])[0]
 
 
-def descobrir_fontes_admitad(cliente: "admitad.AdmitadClient", manuais: list[dict[str, Any]]
-                             ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def descobrir_fontes_admitad(cliente: "admitad.AdmitadClient", manuais: list[dict[str, Any]],
+                             website_id: str = "") -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Uma fonte por loja aprovada, sem duplicar o que já foi cadastrado à mão."""
-    espacos = cliente.espacos()
+    try:
+        espacos = cliente.espacos()
+    except Exception:
+        espacos = []
     alvo = [e for e in espacos if "roboglobal" in str(e.get("site_url", "")).replace(".", "").lower()
             or "rob" in str(e.get("name", "")).lower()] or espacos
+    # Espaço em análise pode não aparecer na listagem: usa o ID configurado ou o do link de feed.
+    ids = {int(e["id"]) for e in alvo if str(e.get("id", "")).isdigit()}
+    if not ids:
+        candidatos = [website_id] + [str(admitad.website_id_do_link(f.get("url", "")) or "") for f in manuais]
+        ids = {int(c) for c in candidatos if str(c).isdigit()}
+        alvo = [{"id": i} for i in sorted(ids)]
     manuais_feed = {_feed_id(f["url"]) for f in manuais if _feed_id(f.get("url", ""))}
     manuais_loja = [feed_universal.slug(str(f.get("anunciante", ""))) for f in manuais if f.get("anunciante")]
     extras: list[dict[str, Any]] = []
@@ -289,8 +298,8 @@ def descobrir_fontes_admitad(cliente: "admitad.AdmitadClient", manuais: list[dic
                 continue  # já cadastrada à mão no painel
             extras.append({"rede": "admitad", "url": url, "anunciante": nome, "subid": "subid",
                            "afiliado": True, "mercado": "BR", "idioma": "pt"})
-    return extras, {"espacos": len(alvo), "lojas_aprovadas": lojas, "com_feed": len(extras),
-                    "sem_feed": sem_feed[:20]}
+    return extras, {"espacos_api": len(espacos), "espacos_usados": [int(e["id"]) for e in alvo],
+                    "lojas_aprovadas": lojas, "com_feed": len(extras), "sem_feed": sem_feed[:20]}
 
 
 def sincronizar_vendas_admitad(db: Session, cliente: "admitad.AdmitadClient") -> dict[str, int]:
