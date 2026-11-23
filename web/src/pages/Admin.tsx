@@ -10,7 +10,7 @@ const TOKEN_KEY = "rg_admin_token";
 type Json = Record<string, any>;
 type Tab = "geral" | "aquisicao" | "catalogo" | "ofertas" | "vendas" | "leads" | "sistema";
 
-function readToken() { try { return sessionStorage.getItem(TOKEN_KEY) || ""; } catch { return ""; } }
+function readToken() { try { return localStorage.getItem(TOKEN_KEY) || ""; } catch { return ""; } }
 
 async function call(token: string, path: string, init: RequestInit = {}): Promise<any> {
   const r = await fetch(API_URL + path, {
@@ -40,18 +40,18 @@ export default function Admin() {
       return data;
     } catch (e) {
       const text = (e as Error).message;
-      if (/Token administrativo invalido/.test(text)) { try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* sem armazenamento */ } setToken(""); }
+      if (/Token administrativo invalido/.test(text)) { try { localStorage.removeItem(TOKEN_KEY); } catch { /* sem armazenamento */ } setToken(""); }
       setMsg({ ok: false, text });
       throw e;
     }
   }, [token]);
 
-  if (!token) return <Login onToken={t => { try { sessionStorage.setItem(TOKEN_KEY, t); } catch { /* sem armazenamento */ } setToken(t); }} />;
+  if (!token) return <Login onToken={t => { try { localStorage.setItem(TOKEN_KEY, t); } catch { /* sem armazenamento */ } setToken(t); }} />;
 
   const tabs: [Tab, string][] = [["geral", "Visão geral"], ["aquisicao", "Aquisição"], ["catalogo", "Catálogo"], ["ofertas", "Ofertas"], ["vendas", "Vendas"], ["leads", "Leads"], ["sistema", "Sistema"]];
   return <div className="adm">
     <div className="adm-top"><h1>Operação Robô Global</h1>
-      <button className="adm-link" onClick={() => { try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* sem armazenamento */ } setToken(""); }}>Sair</button></div>
+      <button className="adm-link" onClick={() => { try { localStorage.removeItem(TOKEN_KEY); } catch { /* sem armazenamento */ } setToken(""); }}>Sair</button></div>
     <nav className="adm-tabs">{tabs.map(([k, label]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => { setTab(k); setMsg(null); setVersion(v => v + 1); }}>{label}</button>)}</nav>
     {msg && <p className={msg.ok ? "adm-ok" : "adm-err"} role="status">{msg.text}</p>}
     <div key={tab + version}>
@@ -81,12 +81,15 @@ function Login({ onToken }: { onToken: (t: string) => void }) {
   const [err, setErr] = useState("");
   async function submit(e: FormEvent) {
     e.preventDefault(); setErr("");
-    try { await call(value.trim(), "/admin/sistema"); onToken(value.trim()); }
-    catch (x) { setErr((x as Error).message); }
+    // Aceita a chave pura ou colada como aparece no Render ("nome:chave").
+    const v = value.trim();
+    for (const t of v.includes(":") ? [v, v.slice(v.indexOf(":") + 1)] : [v]) {
+      try { await call(t, "/admin/sistema"); onToken(t); return; } catch (x) { setErr((x as Error).message); }
+    }
   }
   return <div className="adm adm-login"><h1>Área de operação</h1>
-    <p>Acesso com o token administrativo definido no servidor (ADMIN_TOKEN).</p>
-    <form onSubmit={submit}><input type="password" value={value} onChange={e => setValue(e.target.value)} placeholder="Token" aria-label="Token administrativo" required />
+    <p>Digite a chave de acesso uma única vez: este aparelho fica conectado até você tocar em "Sair".</p>
+    <form onSubmit={submit}><input type="password" value={value} onChange={e => setValue(e.target.value)} placeholder="Chave de acesso" aria-label="Chave de acesso" required />
       <button className="adm-btn">Entrar</button></form>{err && <p className="adm-err">{err}</p>}</div>;
 }
 
