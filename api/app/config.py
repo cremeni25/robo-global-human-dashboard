@@ -113,6 +113,10 @@ class Settings:
     auto_decisoes: bool = field(default_factory=lambda: os.getenv("AUTO_DECISOES", "1") == "1")
     # AUTO_CATALOGO_IA: com ANTHROPIC_API_KEY, a IA traduz e agrupa as categorias em temas em português.
     auto_catalogo_ia: bool = field(default_factory=lambda: os.getenv("AUTO_CATALOGO_IA", "1") == "1")
+    # Custo da IA amarrado às vendas: teto do teste (US$) + fração das comissões aprovadas.
+    ia_teto_teste_usd: float = field(default_factory=lambda: _float("IA_TETO_TESTE_USD", 5.0))
+    ia_fracao_comissao: float = field(default_factory=lambda: _float("IA_FRACAO_COMISSAO", 0.10))
+    ia_cotacao_usd_brl: float = field(default_factory=lambda: _float("IA_COTACAO_USD_BRL", 5.5))
     anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", "").strip(), repr=False)
     # Parâmetros da inteligência (recomendações sempre aprovadas por um humano)
     min_cliques_decisao: int = field(default_factory=lambda: _int("MIN_CLIQUES_DECISAO", 100))

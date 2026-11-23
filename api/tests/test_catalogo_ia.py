@@ -62,13 +62,24 @@ def test_ia_traduz_agrupa_e_busca_em_portugues(motor):  # noqa: F811
     # Custo controlado: nada é reenviado; categoria nova de produto novo vai sozinha
     with client.app.state.sessionmaker() as db:
         assert organizar_com_ia(db, s, ia)["categorias_enviadas"] == 0
+    # Depois da organização inicial: produto novo sem clique NÃO gasta IA
     fake.rows.append(produto("4", "111", "Sport buds", "Electronics > Headphones > Sports Headphones"))
     s.auto_taxonomia = False
     run()
     with client.app.state.sessionmaker() as db:
+        assert organizar_com_ia(db, s, ia)["categorias_enviadas"] == 0
+    # ... e passa a valer a pena quando alguém clica nele
+    novo = next(o for o in client.get("/public/ofertas", params={"q": "Sport buds"}).json()["data"])
+    assert client.get(novo["url"]).status_code in (302, 307)
+    with client.app.state.sessionmaker() as db:
         r = organizar_com_ia(db, s, ia)
     assert r["categorias_enviadas"] == 1 and r["temas_novos"] == 0
     assert client.get("/public/ofertas", params={"q": "fone"}).json()["total"] == 3
+
+    # Gasto registrado e visível no painel, ao lado de cliques e vendas
+    ia_painel = client.get("/admin/resumo").json()["ia"]
+    assert ia_painel["chamadas"] == 2 and ia_painel["gasto_usd"] > 0
+    assert ia_painel["limite_usd"] == 5.0 and ia_painel["saldo_usd"] < 5.0
 
 
 def test_sem_chave_o_agente_nao_roda(settings):
@@ -79,3 +90,28 @@ def test_sem_chave_o_agente_nao_roda(settings):
     Base.metadata.create_all(eng)
     with Session(eng) as db:
         assert organizar_com_ia(db, settings) == {"status": "sem_chave"}
+
+
+def test_sem_saldo_a_ia_para_e_so_volta_com_comissao(motor):  # noqa: F811
+    from decimal import Decimal
+    from app.models import Conversao, new_id
+    client, fake, run = motor
+    s = client.app.state.settings
+    s.auto_aprovar_anunciantes = s.auto_taxonomia = True
+    s.ia_teto_teste_usd = 0.0  # teste já consumido
+    fake.rows = [produto("1", "111", "Earbuds X1", "Electronics > Headphones > Earbud Headphones")]
+    run()
+    ia = FakeClaude()
+    with client.app.state.sessionmaker() as db:
+        r = organizar_com_ia(db, s, ia)
+    assert r["status"] == "orcamento_esgotado" and ia.chamadas == []
+    # O organizador gratuito mantém o produto com tema, sem custo
+    assert len(client.get("/public/nichos").json()["data"]) == 1
+    # Entra uma comissão aprovada de R$ 55 (US$ 10): 10% = US$ 1 de orçamento, cabe uma chamada
+    with client.app.state.sessionmaker() as db:
+        db.add(Conversao(id=new_id(), platform="hotmart", external_id="V1", status="approved",
+                         commission_amount=Decimal("55.00"), currency="BRL"))
+        db.commit()
+        r = organizar_com_ia(db, s, ia)
+    assert len(ia.chamadas) == 1 and r["categorias_enviadas"] == 1
+    assert r["orcamento"]["comissoes_aprovadas_usd"] == 10.0

@@ -50,6 +50,8 @@ def resumo(request: Request, db: Session = Depends(get_db), actor: str = Depends
     data = resumo_humano(db, request.app.state.settings)
     data["sistema"] = sistema(db)
     data["operador"] = actor
+    from ..agente_catalogo import orcamento
+    data["ia"] = orcamento(db, request.app.state.settings)
     return data
 
 
