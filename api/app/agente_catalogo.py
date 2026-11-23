@@ -427,7 +427,8 @@ def traduzir_vitrine(db: Session, s: Settings, chamar: Optional[Chamador] = None
         if not s.anthropic_api_key:
             return {"status": "sem_chave"}
         chamar = _chamador_titulos(s.anthropic_api_key)
-    ids = vitrine.ids_em_vitrine(db)
+    from . import problemas
+    ids = problemas.ids_publicos(db, s)  # o que o público vê: as escolhas das páginas de problema
     pendentes = [o for o in db.scalars(select(Oferta).where(Oferta.id.in_(ids)))
                  if not ((o.translations or {}).get("pt") or {}).get("title")] if ids else []
     out: dict[str, Any] = {"titulos_traduzidos": 0, "custo_usd": 0.0}
@@ -458,6 +459,7 @@ def traduzir_vitrine(db: Session, s: Settings, chamar: Optional[Chamador] = None
         db.commit()
     if out["titulos_traduzidos"]:
         vitrine.limpar_cache()
+        problemas.limpar_cache()
         auditar(db, AGENTE, "vitrine.titulos_ia", "vitrine", "titulos", out)
         db.commit()
     return out

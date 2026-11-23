@@ -32,6 +32,7 @@ def settings():
     s.auto_aprovar_anunciantes = s.auto_taxonomia = s.auto_decisoes = False
     s.importar_legado = False
     s.auto_catalogo_ia = False
+    s.lojas_confiaveis = ["*"]  # filtro de lojas tem teste próprio
     s.anthropic_api_key = ""
     s.epc_alvo = 0.5
     return s

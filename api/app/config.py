@@ -117,6 +117,12 @@ class Settings:
     ia_teto_teste_usd: float = field(default_factory=lambda: _float("IA_TETO_TESTE_USD", 5.0))
     ia_fracao_comissao: float = field(default_factory=lambda: _float("IA_FRACAO_COMISSAO", 0.10))
     ia_cotacao_usd_brl: float = field(default_factory=lambda: _float("IA_COTACAO_USD_BRL", 5.5))
+    # Lojas que podem aparecer ao público (as demais ficam só no banco). Separe por vírgula.
+    lojas_confiaveis: list[str] = field(default_factory=lambda: [x.strip() for x in os.getenv(
+        "LOJAS_CONFIAVEIS", "AliExpress WW,Geekbuying").split(",") if x.strip()])
+    # Seleção automática de produtos nas páginas de problema (desligada: por palavra-chave
+    # ela escolhe itens sem relação com o problema; o padrão é curadoria).
+    problemas_automatico: bool = field(default_factory=lambda: os.getenv("PROBLEMAS_AUTOMATICO", "0") == "1")
     anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", "").strip(), repr=False)
     # Parâmetros da inteligência (recomendações sempre aprovadas por um humano)
     min_cliques_decisao: int = field(default_factory=lambda: _int("MIN_CLIQUES_DECISAO", 100))

@@ -55,6 +55,30 @@ def resumo(request: Request, db: Session = Depends(get_db), actor: str = Depends
     return data
 
 
+@router.get("/problemas")
+def problemas_painel(request: Request, db: Session = Depends(get_db), _: str = Depends(require_admin)):
+    """Cada página de problema: se está no ar e quais produtos mostra."""
+    from ..problemas import status_painel
+    return {"data": status_painel(db, request.app.state.settings)}
+
+
+class FixarIn(BaseModel):
+    ofertas: list[str] = Field(default_factory=list, max_length=3)
+
+
+@router.put("/problemas/{slug}")
+def fixar_problema(slug: str, payload: FixarIn, db: Session = Depends(get_db), actor: str = Depends(require_admin)):
+    """Fixa à mão até 3 produtos numa página (ex.: links da Amazon cadastrados em Ofertas).
+    Lista vazia volta para a seleção automática."""
+    from ..problemas import fixar
+    r = fixar(db, slug, payload.ofertas)
+    if r is None:
+        raise HTTPException(status_code=404, detail="Problema nao encontrado")
+    auditar(db, actor, "problema.fixado", "problema", slug, {"ofertas": r})
+    db.commit()
+    return {"slug": slug, "ofertas": r}
+
+
 @router.get("/canais")
 def canais(db: Session = Depends(get_db), _: str = Depends(require_admin)):
     """Resultado por canal de divulgação (utm_source): cliques e vendas, 30 dias e total."""

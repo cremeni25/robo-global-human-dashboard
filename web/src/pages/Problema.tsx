@@ -1,0 +1,64 @@
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useLanguage } from "../contexts/LanguageContext";
+import { carregarProblema } from "../problemas";
+import type { Problema as P } from "../problemas";
+import { compartilhar, linkSaida, tituloOferta } from "../rastreio";
+
+const copy = {
+  pt: { consider: "Antes de escolher", picks: "Três boas opções", go: "Ver na loja", share: "Compartilhar", back: "Ver outros problemas",
+    loading: "Carregando…", missing: "Esta página não está disponível no momento.", error: "Não foi possível carregar agora.", store: "Vendido e entregue por" },
+  en: { consider: "Before you choose", picks: "Three good options", go: "View in store", share: "Share", back: "See other problems",
+    loading: "Loading…", missing: "This page isn't available right now.", error: "We couldn't load this right now.", store: "Sold and shipped by" },
+  es: { consider: "Antes de elegir", picks: "Tres buenas opciones", go: "Ver en la tienda", share: "Compartir", back: "Ver otros problemas",
+    loading: "Cargando…", missing: "Esta página no está disponible en este momento.", error: "No pudimos cargar ahora.", store: "Vendido y enviado por" },
+};
+const locais = { pt: "pt-BR", en: "en-US", es: "es-ES" } as const;
+
+export default function Problema() {
+  const { slug = "" } = useParams(); const { lang } = useLanguage(); const t = copy[lang];
+  const [p, setP] = useState<P | null | undefined>(undefined);
+  const [erro, setErro] = useState(false);
+  useEffect(() => {
+    const c = new AbortController();
+    setP(undefined); setErro(false);
+    carregarProblema(slug, c.signal).then(setP).catch(() => { if (!c.signal.aborted) setErro(true); });
+    return () => c.abort();
+  }, [slug]);
+  useEffect(() => { if (p) document.title = p.titulo[lang] + " · Robô Global"; return () => { document.title = "Robô Global"; }; }, [p, lang]);
+
+  if (erro || p === null || p === undefined) return <div className="rg-store"><div className="rg-store-inner rg-store-body">
+    <p role="status">{erro ? t.error : p === null ? t.missing : t.loading}</p>
+    {(erro || p === null) && <Link className="rg-retry" to="/">← {t.back}</Link>}</div></div>;
+
+  const preco = (v?: number | null, m?: string) => v != null && m ? new Intl.NumberFormat(locais[lang], { style: "currency", currency: m }).format(v) : "";
+  return <div className="rg-store">
+    <section className="rg-store-hero"><div className="rg-store-inner">
+      <Link className="rg-crumb" to={"/#" + p.tema}><span aria-hidden="true">{p.tema_icone}</span> {p.tema_titulo[lang]}</Link>
+      <h1>{p.titulo[lang]}</h1><p>{p.resumo[lang]}</p>
+    </div></section>
+    <div className="rg-store-inner rg-store-body rg-problema">
+      <section className="rg-considerar" aria-labelledby="considerar">
+        <h2 id="considerar">{t.consider}</h2>
+        <ul>{p.considerar.map((c, i) => <li key={i}>{c[lang]}</li>)}</ul>
+      </section>
+      <section aria-labelledby="escolhas">
+        <header className="rg-escolhas-head"><h2 id="escolhas">{t.picks}</h2>
+          <button className="rg-share" onClick={() => compartilhar(p.titulo[lang], window.location.origin + "/problema/" + p.slug)}>{t.share}</button></header>
+        <div className="rg-escolhas">{p.escolhas.map(e => {
+          const o = e.oferta; const loja = (o.provider || "").replace(/\s+(WW|BR|Many Geos)$/i, "");
+          return <article className="rg-escolha" key={o.id}>
+            <span className="rg-nivel">{e.nivel[lang]}</span>
+            <div className="rg-escolha-img">{o.image_url && <img src={o.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={ev => { ev.currentTarget.style.visibility = "hidden"; }} />}</div>
+            <h3>{tituloOferta(o, lang)}</h3>
+            <p className="rg-motivo">{e.motivo[lang]}</p>
+            {preco(o.price, o.currency) && <strong className="rg-card-price">{preco(o.price, o.currency)}</strong>}
+            {loja && <small className="rg-loja">{t.store} {loja}</small>}
+            <a className="rg-retry rg-escolha-go" href={linkSaida(o.url)} target="_blank" rel="noopener noreferrer sponsored">{t.go} ↗</a>
+          </article>;
+        })}</div>
+      </section>
+      <p><Link className="rg-shelf-all" to="/">← {t.back}</Link></p>
+    </div>
+  </div>;
+}

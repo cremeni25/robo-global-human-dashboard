@@ -90,6 +90,27 @@ function Login({ onToken }: { onToken: (t: string) => void }) {
       <button className="adm-btn">Entrar</button></form>{err && <p className="adm-err">{err}</p>}</div>;
 }
 
+function Paginas({ run }: { run: Run }) {
+  const [dados, recarregar] = useData(run, "/admin/problemas");
+  const [edicao, setEdicao] = useState<Record<string, string>>({});
+  const salvar = async (slug: string) => {
+    const ofertas = (edicao[slug] || "").split(/[\s,]+/).filter(Boolean);
+    await run(`/admin/problemas/${slug}`, { method: "PUT", body: JSON.stringify({ ofertas }) },
+      ofertas.length ? "Produtos fixados na página." : "Página voltou para a seleção automática.");
+    recarregar();
+  };
+  return <Card title="Páginas de problema (o que o público vê)">
+    <p className="adm-muted">Cada página aparece ao público quando tem pelo menos 2 produtos bons. Os produtos vêm automaticamente das lojas confiáveis. Para escolher à mão (por exemplo, um link da Amazon cadastrado na aba Ofertas), cole os ids das ofertas e salve. Deixe vazio para voltar ao automático.</p>
+    {dados?.data?.length ? <div className="adm-scroll"><table className="adm-table"><thead><tr><th>Tema</th><th>Problema</th><th>No ar</th><th>Produtos</th><th>Fixar ids (até 3)</th></tr></thead><tbody>
+      {dados.data.map((p: Json) => <tr key={p.slug}><td>{p.tema}</td><td><a href={`${SITE}/problema/${p.slug}`} target="_blank" rel="noreferrer">{p.titulo}</a></td>
+        <td>{p.no_ar ? "sim" : <b className="adm-tag">sem produtos</b>}</td>
+        <td className="adm-muted">{p.produtos.map((o: Json) => <div key={o.id}>{o.title} · {o.provider} · {money(o.price)}</div>)}</td>
+        <td><input className="adm-input" placeholder={p.fixadas.join(", ") || "automático"} value={edicao[p.slug] ?? ""} onChange={e => setEdicao({ ...edicao, [p.slug]: e.target.value })} />
+          <button className="adm-btn" onClick={() => salvar(p.slug)}>Salvar</button></td></tr>)}
+    </tbody></table></div> : <p className="adm-muted">Carregando…</p>}
+  </Card>;
+}
+
 const SITE = "https://www.roboglobal.com.br";
 const CANAIS: [string, string, string][] = [
   ["Instagram (link na bio)", "instagram", "/links"], ["TikTok (link na bio)", "tiktok", "/links"],
@@ -144,6 +165,7 @@ function Geral({ run }: { run: Run }) {
         ["Cliques (30 dias)", t.cliques], ["Vendas (30 dias)", t.vendas]].map(([k, v]) => <div key={k}><strong>{v}</strong><span>{k}</span></div>)}</div>
       <p className="adm-muted">Regra: a IA gasta no máximo US$ {resumo.ia.teto_teste_usd.toFixed(2)} de teste mais {Math.round(resumo.ia.fracao_comissao * 100)}% das comissões aprovadas. Sem saldo, ela para sozinha e o organizador gratuito continua. Depois da organização inicial, a IA só trabalha em produtos que já tiveram clique ou venda. {resumo.ia.chamadas} chamada(s) à IA até agora.</p>
     </Card>}
+    <Paginas run={run} />
     <Divulgacao run={run} />
     <Card title="Recomendações aguardando sua decisão">
       <button className="adm-btn" onClick={async () => { await run("/admin/decisoes/gerar", { method: "POST" }, r => `${r.criadas} nova(s) recomendação(ões).`); reload(); }}>Analisar dados e gerar recomendações</button>

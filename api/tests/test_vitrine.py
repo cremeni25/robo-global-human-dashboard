@@ -18,6 +18,18 @@ def test_vitrine_titulos_e_canais(motor):  # noqa: F811
     assert all(o["url"].startswith("/r/") and o["image_url"] for o in v["secoes"][0]["itens"])
     assert [o["title"] for o in v["achados"]] == ["Cheap Phone Case"]  # só o que custa até R$ 50
 
+    # Página de problema: earbuds caem em "Ouvir música e falar sem fio", com 3 escolhas
+    from app import problemas
+    assert client.get("/public/problemas").json()["temas"] == []  # padrão: só curadoria
+    s.problemas_automatico = True
+    problemas.limpar_cache()
+    temas = client.get("/public/problemas").json()["temas"]
+    assert [t["slug"] for t in temas] == ["eletronicos"]  # temas sem produto bom ficam fora
+    pag = client.get("/public/problemas/fone-sem-fio").json()["data"]
+    assert [e["nivel"]["chave"] for e in pag["escolhas"]] == ["comecar", "equilibrio", "completa"]
+    assert len(pag["considerar"]) == 3 and pag["tema_titulo"]["pt"] == "Eletrônicos"
+    assert client.get("/public/problemas/pet-sozinho-em-casa").status_code == 404
+
     chamadas = []
     def fake_ia(sistema, conteudo):
         chamadas.append(conteudo)
@@ -26,11 +38,28 @@ def test_vitrine_titulos_e_canais(motor):  # noqa: F811
         return {"itens": itens, "_uso": {"entrada": 500, "saida": 300}}
     with client.app.state.sessionmaker() as db:
         r = traduzir_vitrine(db, s, fake_ia)
-    assert r["titulos_traduzidos"] == 7 and len(chamadas) == 1
-    item = client.get("/public/vitrine").json()["secoes"][0]["itens"][0]
+    assert r["titulos_traduzidos"] == 3 and len(chamadas) == 1
+    item = client.get("/public/problemas/fone-sem-fio").json()["data"]["escolhas"][0]["oferta"]
     assert item["translations"]["pt"]["title"].startswith("Fone sem fio")
     with client.app.state.sessionmaker() as db:  # já traduzidos: não paga de novo
         assert traduzir_vitrine(db, s, fake_ia)["titulos_traduzidos"] == 0 and len(chamadas) == 1
+
+    # Painel: fixar produtos à mão numa página (ex.: link da Amazon cadastrado em Ofertas)
+    ids = [e["oferta"]["id"] for e in pag["escolhas"]][::-1][:2]
+    assert client.put("/admin/problemas/fone-sem-fio", json={"ofertas": ids}).json()["ofertas"] == ids
+    pag2 = client.get("/public/problemas/fone-sem-fio").json()["data"]
+    assert [e["oferta"]["id"] for e in pag2["escolhas"]] == ids
+    painel = {p["slug"]: p for p in client.get("/admin/problemas").json()["data"]}
+    assert painel["fone-sem-fio"]["no_ar"] and not painel["dormir-melhor"]["no_ar"]
+
+    # Loja fora da lista de confiáveis não aparece ao público (escolha fixada à mão é respeitada)
+    client.put("/admin/problemas/fone-sem-fio", json={"ofertas": []})
+    s.lojas_confiaveis = []
+    problemas.limpar_cache()
+    vitrine.limpar_cache()
+    assert client.get("/public/ofertas").json()["total"] == 0
+    assert client.get("/public/problemas").json()["temas"] == []
+    s.lojas_confiaveis = ["Loja A"]
 
     # Divulgação: cliques chegam com o canal e aparecem no relatório
     client.get(item["url"], params={"utm_source": "instagram", "utm_medium": "bio"})
