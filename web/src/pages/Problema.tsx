@@ -7,11 +7,11 @@ import { compartilhar, linkSaida, tituloOferta } from "../rastreio";
 
 const copy = {
   pt: { consider: "Antes de escolher", picks: "Três boas opções", go: "Ver na loja", share: "Compartilhar", back: "Ver outros problemas",
-    loading: "Carregando…", missing: "Esta página não está disponível no momento.", error: "Não foi possível carregar agora.", store: "Vendido e entregue por" },
+    loading: "Carregando…", missing: "Esta página não está disponível no momento.", error: "Não foi possível carregar agora.", store: "Vendido e entregue por", amazon: "Ver preço na Amazon", onAmazon: "Disponível na Amazon.com.br" },
   en: { consider: "Before you choose", picks: "Three good options", go: "View in store", share: "Share", back: "See other problems",
-    loading: "Loading…", missing: "This page isn't available right now.", error: "We couldn't load this right now.", store: "Sold and shipped by" },
+    loading: "Loading…", missing: "This page isn't available right now.", error: "We couldn't load this right now.", store: "Sold and shipped by", amazon: "See price on Amazon", onAmazon: "Available on Amazon.com.br" },
   es: { consider: "Antes de elegir", picks: "Tres buenas opciones", go: "Ver en la tienda", share: "Compartir", back: "Ver otros problemas",
-    loading: "Cargando…", missing: "Esta página no está disponible en este momento.", error: "No pudimos cargar ahora.", store: "Vendido y enviado por" },
+    loading: "Cargando…", missing: "Esta página no está disponible en este momento.", error: "No pudimos cargar ahora.", store: "Vendido y enviado por", amazon: "Ver precio en Amazon", onAmazon: "Disponible en Amazon.com.br" },
 };
 const locais = { pt: "pt-BR", en: "en-US", es: "es-ES" } as const;
 
@@ -46,15 +46,16 @@ export default function Problema() {
         <header className="rg-escolhas-head"><h2 id="escolhas">{t.picks}</h2>
           <button className="rg-share" onClick={() => compartilhar(p.titulo[lang], window.location.origin + "/problema/" + p.slug)}>{t.share}</button></header>
         <div className="rg-escolhas">{p.escolhas.map(e => {
-          const o = e.oferta; const loja = (o.provider || "").replace(/\s+(WW|BR|Many Geos)$/i, "");
+          const o = e.oferta; const loja = (o.provider || "").replace(/\s+(WW|BR|Many Geos)$/i, ""); const amazon = loja === "Amazon";
           return <article className="rg-escolha" key={o.id}>
             <span className="rg-nivel">{e.nivel[lang]}</span>
-            <div className="rg-escolha-img">{o.image_url && <img src={o.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={ev => { ev.currentTarget.style.visibility = "hidden"; }} />}</div>
+            {o.image_url ? <div className="rg-escolha-img"><img src={o.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={ev => { ev.currentTarget.style.visibility = "hidden"; }} /></div>
+              : <div className="rg-escolha-icone" aria-hidden="true">{p.tema_icone}</div>}
             <h3>{tituloOferta(o, lang)}</h3>
             <p className="rg-motivo">{e.motivo[lang]}</p>
             {preco(o.price, o.currency) && <strong className="rg-card-price">{preco(o.price, o.currency)}</strong>}
-            {loja && <small className="rg-loja">{t.store} {loja}</small>}
-            <a className="rg-retry rg-escolha-go" href={linkSaida(o.url)} target="_blank" rel="noopener noreferrer sponsored">{t.go} ↗</a>
+            {loja && <small className="rg-loja">{amazon ? t.onAmazon : t.store + " " + loja}</small>}
+            <a className="rg-retry rg-escolha-go" href={linkSaida(o.url)} target="_blank" rel="noopener noreferrer sponsored">{amazon ? t.amazon : t.go} ↗</a>
           </article>;
         })}</div>
       </section>

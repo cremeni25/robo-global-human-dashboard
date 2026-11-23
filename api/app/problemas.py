@@ -223,6 +223,13 @@ def _escolhas(db: Session, s: Settings, slug: str, p: dict, fixas: dict[str, lis
     return _automatico(db, s, p)
 
 
+def _motivo(o: Oferta, i: int) -> dict[str, str]:
+    """Motivo escrito para o produto (curadoria); sem ele, o texto padrão da faixa."""
+    tr = o.translations or {}
+    return {l: ((tr.get(l) or {}).get("description") or (o.description if l == "pt" else "") or NIVEIS[i]["motivo"][l])
+            for l in ("pt", "en", "es")}
+
+
 def _resumo(tema: dict, p: dict, n: int) -> dict[str, Any]:
     return {"slug": p["slug"], "titulo": p["titulo"], "resumo": p["resumo"], "tema": tema["slug"], "produtos": n}
 
@@ -237,7 +244,7 @@ def montar(db: Session, s: Settings) -> dict[str, Any]:
             ofertas = _escolhas(db, s, p["slug"], p, fixas)
             if len(ofertas) < 2:
                 continue  # sem produtos bons, a página não vai ao ar
-            escolhas = [{"nivel": {k: NIVEIS[i][k] for k in ("chave", "pt", "en", "es")}, "motivo": NIVEIS[i]["motivo"],
+            escolhas = [{"nivel": {k: NIVEIS[i][k] for k in ("chave", "pt", "en", "es")}, "motivo": _motivo(o, i),
                          "oferta": _oferta(o)} for i, o in enumerate(ofertas)]
             detalhes[p["slug"]] = {**_resumo(tema, p, len(ofertas)), "considerar": p["considerar"],
                                    "tema_titulo": tema["titulo"], "tema_icone": tema["icone"], "escolhas": escolhas}
