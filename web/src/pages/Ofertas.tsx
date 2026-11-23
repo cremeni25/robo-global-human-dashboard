@@ -59,7 +59,7 @@ export default function Ofertas(){
    :phase==="loading"&&items.length===0?<div className="rg-catalog-loading" role="status">•••</div>
    :items.length===0?<div className="rg-catalog-feedback" role="status">{t.empty}</div>
    :<div className="rg-catalog-grid">{items.map(item=>{const l=localizeOffer(item,lang);return <article className="rg-product-card" key={item.id}>
-    {item.image_url&&<div className="rg-product-image"><img src={item.image_url} alt="" loading="lazy" referrerPolicy="no-referrer"/></div>}
+    {item.image_url&&<div className="rg-product-image"><img src={item.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={e=>{const el=e.currentTarget.closest(".rg-product-image")||e.currentTarget;(el as HTMLElement).style.display="none";}}/></div>}
     <div className="rg-product-content"><div className="rg-product-category">{item.provider||"Robô Global"} <span>· {item.market}</span></div><h2>{l.title}</h2>
      {price(item)&&<p className="rg-product-price">{t.from} <strong>{price(item)}</strong></p>}
      {item.description&&<p className="rg-product-desc">{item.description}</p>}
