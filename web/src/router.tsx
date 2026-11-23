@@ -9,6 +9,7 @@ import Sobre from "./pages/Sobre";
 import Ofertas from "./pages/Ofertas";
 import Links from "./pages/Links";
 import Problema from "./pages/Problema";
+import TemaPagina from "./pages/TemaPagina";
 
 // O painel de operação só é baixado por quem acessa /admin.
 const Admin = lazy(() => import("./pages/Admin"));
@@ -24,6 +25,7 @@ export default function Router() {
         <Route path="/ofertas" element={<Ofertas />} />
         <Route path="/links" element={<Links />} />
         <Route path="/problema/:slug" element={<Problema />} />
+        <Route path="/tema/:slug" element={<TemaPagina />} />
         <Route path="/admin" element={<Suspense fallback={<p className="adm">…</p>}><Admin /></Suspense>} />
       </Route>
     </Routes>
