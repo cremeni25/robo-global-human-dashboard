@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { localizeOffer } from "../catalogCopy";
+import CartaoProduto from "../components/CartaoProduto";
 import { useLanguage } from "../contexts/LanguageContext";
 import { API_URL } from "../config";
 
-type Offer = { id:string; title:string; description?:string; image_url?:string; price?:number|null; currency?:string; market:string; language:string; url:string; provider?:string };
+type Offer = { id:string; title:string; description?:string; image_url?:string; price?:number|null; currency?:string; market:string; language:string; url:string; provider?:string; translations?:Record<string,{title?:string}|undefined> };
 type Phase = "loading" | "ready" | "error";
 const PAGE = 24;
 const copy = {
@@ -47,7 +47,6 @@ export default function Ofertas(){
   return()=>controller.abort();
  },[term,page,dor,attempt]);
 
- const price=(o:Offer)=>o.price!=null&&o.currency?new Intl.NumberFormat(locales[lang],{style:"currency",currency:o.currency}).format(o.price):"";
  return <div className="rg-catalog">
   <section className="rg-catalog-hero"><div className="rg-catalog-hero-inner">
    <span className="rg-catalog-eyebrow">✳ {t.eyebrow}</span><h1>{t.title}</h1><p>{t.lead}</p>
@@ -58,13 +57,7 @@ export default function Ofertas(){
    {phase==="error"?<div className="rg-catalog-feedback" role="alert"><p>{t.error}</p><button onClick={()=>{setPhase("loading");setAttempt(x=>x+1);}}>{t.retry} ↻</button></div>
    :phase==="loading"&&items.length===0?<div className="rg-catalog-loading" role="status">•••</div>
    :items.length===0?<div className="rg-catalog-feedback" role="status">{t.empty}</div>
-   :<div className="rg-catalog-grid">{items.map(item=>{const l=localizeOffer(item,lang);return <article className="rg-product-card" key={item.id}>
-    {item.image_url&&<div className="rg-product-image"><img src={item.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={e=>{const el=e.currentTarget.closest(".rg-product-image")||e.currentTarget;(el as HTMLElement).style.display="none";}}/></div>}
-    <div className="rg-product-content"><div className="rg-product-category">{item.provider||"Robô Global"} <span>· {item.market}</span></div><h2>{l.title}</h2>
-     {price(item)&&<p className="rg-product-price">{t.from} <strong>{price(item)}</strong></p>}
-     {item.description&&<p className="rg-product-desc">{item.description}</p>}
-     <p className="rg-product-trust">✓ {t.secure}</p><a className="rg-product-action" href={API_URL+item.url} target="_blank" rel="noopener noreferrer sponsored">{t.open}<span aria-hidden="true">↗</span></a></div>
-   </article>;})}</div>}
+   :<div className="rg-shelf-grid">{items.map(item=><CartaoProduto key={item.id} p={item} lang={lang} dorId={dor||undefined}/>)}</div>}
    {phase==="ready"&&items.length<total&&<div className="rg-catalog-more"><button className="rg-retry" onClick={()=>{setPhase("loading");setPage(p=>p+1);}}>{t.more}</button></div>}
    <p className="rg-catalog-disclosure">{t.notice}</p><Link className="rg-back" to="/">← {t.back}</Link>
   </section>

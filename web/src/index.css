@@ -77,3 +77,45 @@
 .rg-catalog-more{text-align:center;margin:34px 0}
 .rg-solution-img{width:100%;height:170px;object-fit:cover;border-radius:12px;margin-bottom:8px}
 .adm-tag-ok{background:#174a45;color:#91f2d6}.adm h3{font-size:15px;margin:18px 0 6px}
+/* Vitrine (página inicial), cartões de produto e link na bio — funciona de celular a TV */
+.rg-store{background:#f5f7f5;color:#142c32;min-height:100vh}
+.rg-store-inner{max-width:1440px;margin:auto;padding:0 24px}
+.rg-store-hero{background:linear-gradient(115deg,#0a252c,#10454a);color:#f6fffb;padding:48px 0 40px}
+.rg-store-hero h1{font:800 clamp(30px,4.2vw,58px)/1.1 Manrope,sans-serif;letter-spacing:-.04em;max-width:900px;margin:16px 0 12px}
+.rg-store-hero p{font-size:clamp(15px,1.3vw,18px);line-height:1.6;color:#c4dfdd;max-width:700px;margin:0}
+.rg-store-search{margin-top:24px;max-width:720px}
+.rg-store-search button{border:0;background:#0c605c;color:#fff;font-weight:800;border-radius:11px;padding:12px 20px;cursor:pointer;white-space:nowrap}
+.rg-store-search button:hover{background:#084a49}
+.rg-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+.rg-chips a{color:#e6fff7;border:1px solid #8de9d055;background:#ffffff12;border-radius:999px;padding:8px 14px;font-size:14px;text-decoration:none}
+.rg-chips a:hover,.rg-chips a:focus-visible{background:#8de9d0;color:#0a252c}
+.rg-store-body{padding-top:28px;padding-bottom:60px}
+.rg-store-loading{color:#557;padding:40px 0}
+.rg-store-more{margin:32px 0 0}
+.rg-shelf{margin:0 0 40px;scroll-margin-top:90px}
+.rg-shelf header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+.rg-shelf h2{font:800 clamp(21px,2vw,30px)/1.2 Manrope,sans-serif;letter-spacing:-.02em;margin:2px 0 4px;color:#102d32}
+.rg-shelf header p{margin:0;color:#5a6f70;font-size:14px;max-width:640px}
+.rg-shelf-kicker{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#0c7a6e}
+.rg-shelf-actions{display:flex;gap:10px;align-items:center}
+.rg-shelf-all{color:#0c605c;font-weight:800;text-decoration:none;white-space:nowrap}
+.rg-share{background:transparent;border:1px solid #b8ccc8;color:#123b3e;border-radius:999px;padding:7px 14px;font-weight:700;cursor:pointer}
+.rg-share:hover{background:#e3efec}
+.rg-shelf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:16px}
+.rg-card{display:flex;flex-direction:column;background:#fff;border:1px solid #e1e9e6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
+.rg-card:hover,.rg-card:focus-visible{transform:translateY(-3px);box-shadow:0 14px 34px #173c3b1f;outline:none}
+.rg-card:focus-visible{outline:3px solid #0c7a6e;outline-offset:2px}
+.rg-card-img{aspect-ratio:1/1;background:#eef3f1;overflow:hidden}
+.rg-card-img img{width:100%;height:100%;object-fit:cover;display:block}
+.rg-card-body{display:flex;flex-direction:column;gap:6px;padding:12px 13px 14px;flex:1}
+.rg-card-title{font-size:14px;line-height:1.35;color:#1b3237;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.7em}
+.rg-card-price{font:800 18px Manrope,sans-serif;color:#0b4f4b}
+.rg-card-store{margin-top:auto;font-size:12px;color:#0c7a6e;font-weight:700}
+@media(min-width:1800px){.rg-store-inner{max-width:1800px}.rg-shelf-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}.rg-card-title{font-size:17px}.rg-card-price{font-size:22px}}
+@media(max-width:520px){.rg-store-inner{padding:0 16px}.rg-store-hero{padding:30px 0 28px}.rg-shelf-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.rg-card-title{font-size:13px}.rg-card-price{font-size:16px}.rg-store-search{flex-wrap:nowrap}.rg-store-search button{padding:10px 12px}}
+.rg-links{min-height:100vh;background:linear-gradient(160deg,#0a252c,#10454a);color:#f6fffb;padding:40px 16px}
+.rg-links-inner{max-width:520px;margin:auto;text-align:center;display:flex;flex-direction:column;gap:12px}
+.rg-links-inner h1{font:800 28px Manrope,sans-serif;margin:6px 0 0}.rg-links-inner p{color:#c4dfdd;margin:0 0 8px}
+.rg-links-btn{display:block;background:#fff;color:#0a3438;text-decoration:none;font-weight:800;border-radius:14px;padding:15px 16px;line-height:1.3}
+.rg-links-btn small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#0c7a6e;font-weight:800}
+.rg-links-btn:hover{transform:translateY(-1px)}.rg-links-main{background:#8de9d0}
