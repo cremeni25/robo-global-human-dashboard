@@ -90,7 +90,7 @@ def organizar_taxonomia(db: Session, limite: int = 500) -> dict[str, int]:
         nicho = _obter(db, Nicho, n_title)
         sub = _obter(db, Subnicho, s_title, nicho_id=nicho.id)
         dor = _obter(db, Dor, d_title, subnicho_id=sub.id)
-        db.add(MapeamentoCategoria(id=new_id(), termo=categoria, campo="category", dor_id=dor.id))
+        db.add(MapeamentoCategoria(id=new_id(), termo=categoria, campo="category_exact", dor_id=dor.id))
         existentes.add(categoria.lower())
         criadas += 1
     db.commit()
