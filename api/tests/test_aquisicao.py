@@ -223,3 +223,15 @@ def test_agente_aplica_decisao_sem_humano(admin, catalogo):
     with admin.app.state.sessionmaker() as db:
         assert decidir(db, s)["decisoes_aplicadas"] == 1
     assert admin.get(f"/r/{oid}").status_code == 404  # pausada pelo agente
+
+
+def test_regra_do_agente_usa_categoria_exata_e_nao_trecho(motor):
+    client, fake, run = motor
+    s = client.app.state.settings
+    s.auto_aprovar_anunciantes = s.auto_taxonomia = True
+    fake.rows = [produto("1", "111", "Sandália anabela", "Calçados > Wedges"),
+                 produto("2", "111", "Tênis plataforma", "Calçados > Wedges Shoes")]
+    run()
+    from app.models import DorOferta
+    with client.app.state.sessionmaker() as db:
+        assert db.query(DorOferta).count() == 2  # um vínculo por produto, sem cruzamento

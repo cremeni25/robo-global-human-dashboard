@@ -17,7 +17,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable, Optional
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from .config import Settings
@@ -102,9 +102,13 @@ def aplicar_mapeamentos(db: Session, mapeamento_id: Optional[str] = None) -> int
         q = q.where(MapeamentoCategoria.id == mapeamento_id)
     criados = 0
     for m in db.scalars(q).all():
-        coluna = Oferta.title if m.campo == "title" else Oferta.category
         ja = select(DorOferta.oferta_id).where(DorOferta.dor_id == m.dor_id)
-        ids = db.scalars(select(Oferta.id).where(coluna.ilike(f"%{m.termo}%"), Oferta.id.not_in(ja))).all()
+        if m.campo == "category_exact":  # regras criadas pelo agente: só a categoria idêntica
+            filtro = func.lower(Oferta.category) == m.termo.lower()
+        else:  # regras manuais: trecho do título ou da categoria
+            coluna = Oferta.title if m.campo == "title" else Oferta.category
+            filtro = coluna.ilike(f"%{m.termo}%")
+        ids = db.scalars(select(Oferta.id).where(filtro, Oferta.id.not_in(ja))).all()
         for oid in ids:
             db.add(DorOferta(id=new_id(), dor_id=m.dor_id, oferta_id=oid, priority=1))
             criados += 1
