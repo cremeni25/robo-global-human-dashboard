@@ -21,7 +21,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from .config import Settings
-from .conectores import awin, feed_universal
+from .conectores import admitad, awin, feed_universal
 from .conversions import ConversaoIn, registrar
 from .core import auditar
 from .models import Anunciante, Configuracao, DorOferta, MapeamentoCategoria, Oferta, new_id, utcnow
@@ -188,6 +188,17 @@ def executar_ciclo(SessionLocal: sessionmaker, s: Settings, actor: str = "agenda
                 etapas["feeds"] = {"status": "nao_configurado", "falta": "AWIN_FEED_URL"}
             # 1b. fontes universais: qualquer rede, loja ou fornecedor com feed
             fontes = todas_as_fontes(db, s)
+            # 1a. Admitad: lojas aprovadas e seus feeds, descobertos pela API (sem link manual)
+            cliente_admitad = None
+            if s.admitad_base64 and s.admitad_client_id:
+                try:
+                    cliente_admitad = admitad.AdmitadClient(s.admitad_base64, s.admitad_client_id, fetch)
+                    extras, info = descobrir_fontes_admitad(cliente_admitad, fontes)
+                    fontes = fontes + extras
+                    etapas["admitad_lojas"] = info
+                except Exception as exc:
+                    etapas["admitad_lojas"] = {"status": "falhou", "erro": type(exc).__name__,
+                                               "http": getattr(exc, "code", None)}
             if fontes:
                 resumo_fontes = []
                 for f in fontes:
@@ -195,16 +206,24 @@ def executar_ciclo(SessionLocal: sessionmaker, s: Settings, actor: str = "agenda
                     try:
                         with feed_universal.baixar(f["url"], fetch) as resp:
                             r = importar_produtos(
-                                db, feed_universal.ler(resp, f), platform=rede,
+                                db, feed_universal.ler(resp, f, max_rows=s.feed_max_produtos), platform=rede,
                                 # A rede só entrega feed de programas em que você já é afiliado.
                                 membership="joined" if f.get("afiliado", True) else "unknown",
                                 subid_param=(f.get("subid") or None), market=str(f.get("mercado") or "BR").upper()[:10])
-                        resumo_fontes.append({"rede": rede, "novos": r["novos"], "atualizados": r["atualizados"],
+                        resumo_fontes.append({"rede": rede, "loja": f.get("anunciante", ""), "novos": r["novos"], "atualizados": r["atualizados"],
                                               "desativados": r["desativados"], "lidos": r["lidos"]})
                     except Exception as exc:
                         db.rollback()
-                        resumo_fontes.append({"rede": rede, "status": "falhou", "erro": type(exc).__name__})
+                        resumo_fontes.append({"rede": rede, "loja": f.get("anunciante", ""), "status": "falhou",
+                                              "erro": type(exc).__name__})
                 etapas["fontes"] = {"total": len(fontes), "resultado": resumo_fontes}
+            if cliente_admitad is not None:
+                try:
+                    etapas["admitad_vendas"] = sincronizar_vendas_admitad(db, cliente_admitad)
+                except Exception as exc:
+                    db.rollback()
+                    etapas["admitad_vendas"] = {"status": "falhou", "erro": type(exc).__name__,
+                                                "http": getattr(exc, "code", None)}
             # 2. rede (afiliações e vendas)
             if s.awin_publisher_id and s.awin_api_token:
                 client = awin.AwinClient(s.awin_publisher_id, s.awin_api_token, fetch)
@@ -239,6 +258,57 @@ def executar_ciclo(SessionLocal: sessionmaker, s: Settings, actor: str = "agenda
             return resultado
     finally:
         _lock.release()
+
+
+def _feed_id(url: str) -> str:
+    from urllib.parse import parse_qs, urlsplit
+    return (parse_qs(urlsplit(url).query).get("feed_id") or [""])[0]
+
+
+def descobrir_fontes_admitad(cliente: "admitad.AdmitadClient", manuais: list[dict[str, Any]]
+                             ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Uma fonte por loja aprovada, sem duplicar o que já foi cadastrado à mão."""
+    espacos = cliente.espacos()
+    alvo = [e for e in espacos if "roboglobal" in str(e.get("site_url", "")).replace(".", "").lower()
+            or "rob" in str(e.get("name", "")).lower()] or espacos
+    manuais_feed = {_feed_id(f["url"]) for f in manuais if _feed_id(f.get("url", ""))}
+    manuais_loja = [feed_universal.slug(str(f.get("anunciante", ""))) for f in manuais if f.get("anunciante")]
+    extras: list[dict[str, Any]] = []
+    sem_feed: list[str] = []
+    lojas = 0
+    for espaco in alvo:
+        for loja in cliente.lojas_aprovadas(int(espaco["id"])):
+            lojas += 1
+            nome = str(loja.get("name") or f"Loja {loja.get('id')}")
+            url = admitad.escolher_feed(loja)
+            if not url:
+                sem_feed.append(nome)
+                continue
+            slug = feed_universal.slug(nome)
+            if _feed_id(url) in manuais_feed or any(m and slug.startswith(m) for m in manuais_loja):
+                continue  # já cadastrada à mão no painel
+            extras.append({"rede": "admitad", "url": url, "anunciante": nome, "subid": "subid",
+                           "afiliado": True, "mercado": "BR", "idioma": "pt"})
+    return extras, {"espacos": len(alvo), "lojas_aprovadas": lojas, "com_feed": len(extras),
+                    "sem_feed": sem_feed[:20]}
+
+
+def sincronizar_vendas_admitad(db: Session, cliente: "admitad.AdmitadClient") -> dict[str, int]:
+    resumo = {"vendas_lidas": 0, "novas": 0, "atualizadas": 0}
+    for a in cliente.vendas():
+        n = admitad.normalizar_venda(a)
+        if not n:
+            continue
+        resumo["vendas_lidas"] += 1
+        r = registrar(db, ConversaoIn(
+            platform="admitad", external_id=n["external_id"], status=n["status"], gross_amount=n["gross"],
+            commission_amount=n["commission"], currency=n["currency"], occurred_at=n["occurred_at"],
+            click_id=n["click_id"], source="admitad_api", raw={"loja": n["loja"], "status": a.get("status")}))
+        if r.criada:
+            resumo["novas"] += 1
+        elif r.alterada:
+            resumo["atualizadas"] += 1
+    return resumo
 
 
 FONTES_KEY = "fontes"
