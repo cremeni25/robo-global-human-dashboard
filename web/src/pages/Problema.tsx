@@ -6,11 +6,11 @@ import type { Problema as P } from "../problemas";
 import { compartilhar, linkSaida, tituloOferta } from "../rastreio";
 
 const copy = {
-  pt: { consider: "Antes de escolher", picks: "Três boas opções", go: "Ver na loja", share: "Compartilhar", back: "Ver outros problemas",
+  pt: { consider: "Antes de escolher", picks: "Três boas opções", go: "Ver na loja", share: "Compartilhar", back: "Ver outros problemas", voltar: "Voltar para",
     loading: "Carregando…", missing: "Esta página não está disponível no momento.", error: "Não foi possível carregar agora.", store: "Vendido e entregue por", amazon: "Ver preço na Amazon", onAmazon: "Disponível na Amazon.com.br" },
-  en: { consider: "Before you choose", picks: "Three good options", go: "View in store", share: "Share", back: "See other problems",
+  en: { consider: "Before you choose", picks: "Three good options", go: "View in store", share: "Share", back: "See other problems", voltar: "Back to",
     loading: "Loading…", missing: "This page isn't available right now.", error: "We couldn't load this right now.", store: "Sold and shipped by", amazon: "See price on Amazon", onAmazon: "Available on Amazon.com.br" },
-  es: { consider: "Antes de elegir", picks: "Tres buenas opciones", go: "Ver en la tienda", share: "Compartir", back: "Ver otros problemas",
+  es: { consider: "Antes de elegir", picks: "Tres buenas opciones", go: "Ver en la tienda", share: "Compartir", back: "Ver otros problemas", voltar: "Volver a",
     loading: "Cargando…", missing: "Esta página no está disponible en este momento.", error: "No pudimos cargar ahora.", store: "Vendido y enviado por", amazon: "Ver precio en Amazon", onAmazon: "Disponible en Amazon.com.br" },
 };
 const locais = { pt: "pt-BR", en: "en-US", es: "es-ES" } as const;
@@ -34,7 +34,7 @@ export default function Problema() {
   const preco = (v?: number | null, m?: string) => v != null && m ? new Intl.NumberFormat(locais[lang], { style: "currency", currency: m }).format(v) : "";
   return <div className="rg-store">
     <section className="rg-store-hero"><div className="rg-store-inner">
-      <Link className="rg-crumb" to={"/#" + p.tema}><span aria-hidden="true">{p.tema_icone}</span> {p.tema_titulo[lang]}</Link>
+      <Link className="rg-voltar" to={"/tema/" + p.tema}>← {t.voltar} {p.tema_titulo[lang]}</Link>
       <h1>{p.titulo[lang]}</h1><p>{p.resumo[lang]}</p>
     </div></section>
     <div className="rg-store-inner rg-store-body rg-problema">
@@ -58,7 +58,7 @@ export default function Problema() {
           </article>;
         })}</div>
       </section>
-      <p><Link className="rg-shelf-all" to="/">← {t.back}</Link></p>
+      <p><Link className="rg-shelf-all" to={"/tema/" + p.tema}>← {t.voltar} {p.tema_titulo[lang]}</Link></p>
     </div>
   </div>;
 }
