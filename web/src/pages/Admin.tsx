@@ -111,6 +111,15 @@ function Geral({ run }: { run: Run }) {
       <div className="adm-kpis">{[["Cliques", t.cliques], ["Vendas aprovadas", t.vendas], ["Comissões", money(t.receita)], ["Reembolsos", t.reembolsos], ["Leads", t.leads], ["Ofertas no ar", t.ofertas_visiveis]].map(([k, v]) => <div key={k}><strong>{v}</strong><span>{k}</span></div>)}</div>
       <ul className="adm-frases">{resumo.frases.map((f: string) => <li key={f}>{f}</li>)}</ul>
     </Card>}
+    {resumo?.ia && <Card title="Custo da IA × resultado em vendas">
+      <div className="adm-kpis">{[
+        ["Gasto da IA (US$)", resumo.ia.gasto_usd.toFixed(2)],
+        ["Limite atual (US$)", resumo.ia.limite_usd.toFixed(2)],
+        ["Saldo (US$)", resumo.ia.saldo_usd.toFixed(2)],
+        ["Comissões aprovadas (US$)", resumo.ia.comissoes_aprovadas_usd.toFixed(2)],
+        ["Cliques (30 dias)", t.cliques], ["Vendas (30 dias)", t.vendas]].map(([k, v]) => <div key={k}><strong>{v}</strong><span>{k}</span></div>)}</div>
+      <p className="adm-muted">Regra: a IA gasta no máximo US$ {resumo.ia.teto_teste_usd.toFixed(2)} de teste mais {Math.round(resumo.ia.fracao_comissao * 100)}% das comissões aprovadas. Sem saldo, ela para sozinha e o organizador gratuito continua. Depois da organização inicial, a IA só trabalha em produtos que já tiveram clique ou venda. {resumo.ia.chamadas} chamada(s) à IA até agora.</p>
+    </Card>}
     <Card title="Recomendações aguardando sua decisão">
       <button className="adm-btn" onClick={async () => { await run("/admin/decisoes/gerar", { method: "POST" }, r => `${r.criadas} nova(s) recomendação(ões).`); reload(); }}>Analisar dados e gerar recomendações</button>
       {decisoes?.data?.length ? <table className="adm-table"><thead><tr><th>Oferta</th><th>Recomendação</th><th>Motivo</th><th></th></tr></thead><tbody>

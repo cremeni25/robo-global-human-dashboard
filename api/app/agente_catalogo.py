@@ -4,10 +4,15 @@ Transforma categorias técnicas das lojas ("Consumer Electronics > Headphones &
 Earphones > Earbud Headphones") em poucos temas por NECESSIDADE, em português,
 com tradução para inglês e espanhol, e religa os produtos a esses temas.
 
-Controle de custo:
-- cada categoria é enviada à IA uma única vez (resultado guardado em rg_config);
-- no máximo CATEGORIAS_POR_CICLO categorias por ciclo, em lotes;
-- sem ANTHROPIC_API_KEY o agente simplesmente não roda (o organizador sem IA assume).
+Custo amarrado às vendas (regra definida pelo dono do projeto):
+- teto do teste: a IA gasta no máximo IA_TETO_TESTE_USD antes de existir venda;
+- depois disso, só gasta o que as comissões pagam: o orçamento total é o teto do
+  teste + IA_FRACAO_COMISSAO (ex.: 10%) de toda comissão aprovada até hoje;
+- antes de cada chamada, confere se o pior custo possível da chamada cabe no saldo;
+- após organizar o catálogo existente uma vez, só envia categorias de produtos que
+  já tiveram clique ou venda (as demais ficam com o organizador gratuito, sem IA);
+- cada categoria é enviada uma única vez (resultado guardado em rg_config);
+- todo gasto fica registrado e aparece no painel ao lado de cliques, vendas e comissão.
 """
 from __future__ import annotations
 
@@ -21,6 +26,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from .config import Settings
 from .core import auditar, filtro_oferta_visivel, is_test_slug
+from .models import utcnow
 from .models import (
     Anunciante, Configuracao, Dor, DorOferta, MapeamentoCategoria, Nicho, Oferta, Subnicho, new_id,
 )
@@ -32,6 +38,17 @@ MODELO = "claude-opus-5-5"
 LOTE = 120
 CATEGORIAS_POR_CICLO = 600
 IDIOMAS = ("pt", "en", "es")
+MAX_SAIDA = 16000
+# Preço do modelo por milhão de tokens (US$), para registrar o gasto de cada chamada.
+PRECO_ENTRADA_MTOK = 4.0
+PRECO_SAIDA_MTOK = 20.0
+# Pior caso por chamada: entrada estimada generosa + saída máxima.
+ENTRADA_MAX_ESTIMADA = 20000
+CUSTO_MAX_CHAMADA = (ENTRADA_MAX_ESTIMADA * PRECO_ENTRADA_MTOK + MAX_SAIDA * PRECO_SAIDA_MTOK) / 1_000_000
+
+
+def custo_usd(entrada: int, saida: int) -> float:
+    return (entrada * PRECO_ENTRADA_MTOK + saida * PRECO_SAIDA_MTOK) / 1_000_000
 
 _CAMPOS_TEMA = ["chave"] + [f"{nivel}_{l}" for l in IDIOMAS for nivel in ("nicho", "subnicho", "dor", "descricao")] + ["palavras_pt"]
 
@@ -77,18 +94,19 @@ def _chamador_claude(api_key: str) -> Chamador:
     def chamar(sistema: str, conteudo: str) -> dict[str, Any]:
         resp = client.beta.messages.create(
             model=MODELO,
-            max_tokens=16000,
+            max_tokens=MAX_SAIDA,
             betas=["server-side-fallback-2026-07-01"],
             fallbacks="default",
             system=sistema,
             messages=[{"role": "user", "content": conteudo}],
             output_config={"effort": "low", "format": {"type": "json_schema", "schema": SCHEMA}},
         )
+        uso = {"entrada": resp.usage.input_tokens, "saida": resp.usage.output_tokens}
         if resp.stop_reason in ("refusal", "max_tokens"):
-            raise RuntimeError(f"resposta incompleta: {resp.stop_reason}")
+            return {"_uso": uso, "_erro": f"resposta incompleta: {resp.stop_reason}"}  # paga, mas sem uso
         texto = next(b.text for b in resp.content if b.type == "text")
         dados = json.loads(texto)
-        dados["_uso"] = {"entrada": resp.usage.input_tokens, "saida": resp.usage.output_tokens}
+        dados["_uso"] = uso
         return dados
 
     return chamar
@@ -100,7 +118,41 @@ def _estado(db: Session) -> dict[str, Any]:
     v.setdefault("temas", {})
     v.setdefault("categorias", {})
     v.setdefault("dores", {})  # chave do tema -> id da dor criada
+    v.setdefault("gasto_usd", 0.0)
+    v.setdefault("gasto_por_mes", {})
+    v.setdefault("chamadas", 0)
+    v.setdefault("inicial_concluida", False)
     return v
+
+
+def _taxa_brl(s: Settings) -> float:
+    return s.ia_cotacao_usd_brl if s.ia_cotacao_usd_brl > 0 else 5.5
+
+
+def comissoes_aprovadas_usd(db: Session, s: Settings) -> float:
+    """Total de comissões aprovadas, convertido para dólar (BRL pela cotação configurada)."""
+    from .models import Conversao
+    total = 0.0
+    for moeda, valor in db.execute(select(Conversao.currency, func.sum(Conversao.commission_amount))
+                                   .where(Conversao.status == "approved").group_by(Conversao.currency)).all():
+        v = float(valor or 0)
+        if moeda == "USD":
+            total += v
+        elif moeda == "BRL":
+            total += v / _taxa_brl(s)
+        # outras moedas não contam (conservador: nunca aumenta o orçamento por engano)
+    return round(total, 4)
+
+
+def orcamento(db: Session, s: Settings, estado: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    estado = estado if estado is not None else _estado(db)
+    comissao = comissoes_aprovadas_usd(db, s)
+    limite = s.ia_teto_teste_usd + s.ia_fracao_comissao * comissao
+    gasto = float(estado.get("gasto_usd", 0.0))
+    return {"teto_teste_usd": s.ia_teto_teste_usd, "fracao_comissao": s.ia_fracao_comissao,
+            "comissoes_aprovadas_usd": comissao, "limite_usd": round(limite, 4),
+            "gasto_usd": round(gasto, 4), "saldo_usd": round(max(0.0, limite - gasto), 4),
+            "gasto_por_mes": estado.get("gasto_por_mes", {}), "chamadas": estado.get("chamadas", 0)}
 
 
 def _salvar(db: Session, estado: dict[str, Any]) -> None:
@@ -111,6 +163,16 @@ def _salvar(db: Session, estado: dict[str, Any]) -> None:
         row.value = estado
         flag_modified(row, "value")
     db.commit()
+
+
+def _categorias_com_resultado(db: Session) -> set[str]:
+    """Categorias cujos produtos já tiveram clique ou venda."""
+    from .models import Clique, Conversao
+    com_clique = select(Clique.oferta_id)
+    com_venda = select(Conversao.oferta_id).where(Conversao.oferta_id.is_not(None))
+    rows = db.scalars(select(Oferta.category).where(Oferta.category != "",
+                                                    Oferta.id.in_(com_clique.union(com_venda))).distinct())
+    return {c.lower() for c in rows}
 
 
 def _categorias_pendentes(db: Session, feitas: dict[str, str]) -> list[str]:
@@ -238,19 +300,41 @@ def organizar_com_ia(db: Session, s: Settings, chamar: Optional[Chamador] = None
         chamar = _chamador_claude(s.anthropic_api_key)
     estado = _estado(db)
     pendentes = _categorias_pendentes(db, estado["categorias"])
+    if not pendentes and not estado["inicial_concluida"]:
+        estado["inicial_concluida"] = True
+        _salvar(db, estado)
+    if estado["inicial_concluida"]:
+        # Depois da organização inicial: só gasta com o que já mostrou interesse real.
+        com_resultado = _categorias_com_resultado(db)
+        pendentes = [c for c in pendentes if c.lower() in com_resultado]
     out: dict[str, Any] = {"categorias_enviadas": 0, "temas_novos": 0, "produtos_movidos": 0,
-                           "temas_antigos_recolhidos": 0, "tokens_entrada": 0, "tokens_saida": 0}
+                           "temas_antigos_recolhidos": 0, "tokens_entrada": 0, "tokens_saida": 0,
+                           "custo_usd": 0.0}
     if not pendentes:
+        out["orcamento"] = orcamento(db, s, estado)
         return out
     dores_antigas: set[str] = set()
     for i in range(0, len(pendentes), LOTE):
         lote = pendentes[i:i + LOTE]
         conteudo = ("Temas existentes:\n" + _resumo_temas(estado["temas"]) +
                     "\n\nCategorias para atribuir (uma por linha):\n" + "\n".join(lote))
+        if orcamento(db, s, estado)["saldo_usd"] < CUSTO_MAX_CHAMADA:
+            out["status"] = "orcamento_esgotado"  # só volta a gastar quando entrar comissão
+            break
         resp = chamar(SISTEMA, conteudo)
         uso = resp.get("_uso") or {}
-        out["tokens_entrada"] += int(uso.get("entrada", 0))
-        out["tokens_saida"] += int(uso.get("saida", 0))
+        e, sa = int(uso.get("entrada", 0)), int(uso.get("saida", 0))
+        custo = custo_usd(e, sa)
+        mes = utcnow().strftime("%Y-%m")
+        estado["gasto_usd"] = round(float(estado["gasto_usd"]) + custo, 6)
+        estado["gasto_por_mes"][mes] = round(float(estado["gasto_por_mes"].get(mes, 0.0)) + custo, 6)
+        estado["chamadas"] = int(estado["chamadas"]) + 1
+        out["tokens_entrada"] += e
+        out["tokens_saida"] += sa
+        out["custo_usd"] = round(out["custo_usd"] + custo, 6)
+        if resp.get("_erro"):
+            _salvar(db, estado)
+            raise RuntimeError(str(resp["_erro"]))
         out["categorias_enviadas"] += len(lote)
         for t in resp.get("novos_temas", []):
             k = _slug(str(t.get("chave", "")))
@@ -277,7 +361,8 @@ def organizar_com_ia(db: Session, s: Settings, chamar: Optional[Chamador] = None
     from .aquisicao import aplicar_mapeamentos
     out["vinculos_criados"] = aplicar_mapeamentos(db)
     out["temas_total"] = len(estado["temas"])
+    out["orcamento"] = orcamento(db, s, estado)
     auditar(db, AGENTE, "catalogo.organizado_ia", "catalogo", CHAVE,
-            {k: v for k, v in out.items() if isinstance(v, int)})
+            {k: v for k, v in out.items() if isinstance(v, (int, float))})
     db.commit()
     return out
