@@ -214,8 +214,10 @@ def executar_ciclo(SessionLocal: sessionmaker, s: Settings, actor: str = "agenda
                                               "desativados": r["desativados"], "lidos": r["lidos"]})
                     except Exception as exc:
                         db.rollback()
+                        motivo = str(exc).split("?")[0][:120]  # sem parâmetros (podem conter credenciais)
                         resumo_fontes.append({"rede": rede, "loja": f.get("anunciante", ""), "status": "falhou",
-                                              "erro": type(exc).__name__})
+                                              "erro": type(exc).__name__, "motivo": motivo,
+                                              "http": getattr(exc, "code", None)})
                 etapas["fontes"] = {"total": len(fontes), "resultado": resumo_fontes}
             if cliente_admitad is not None:
                 try:
