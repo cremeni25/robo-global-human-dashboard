@@ -82,9 +82,10 @@ def organizar_taxonomia(db: Session, limite: int = 500) -> dict[str, int]:
         .group_by(Oferta.category).order_by(func.count().desc()).limit(limite)).all()
     existentes = {m.termo.lower() for m in db.scalars(select(MapeamentoCategoria))}
     criadas = 0
+    from .conectores.feed_universal import parece_codigo
     for categoria, _n in categorias:
-        if categoria.lower() in existentes:
-            continue
+        if categoria.lower() in existentes or parece_codigo(categoria):
+            continue  # nunca criar tema público com nome de código
         n_title, s_title, d_title = _partes(categoria)
         nicho = _obter(db, Nicho, n_title)
         sub = _obter(db, Subnicho, s_title, nicho_id=nicho.id)

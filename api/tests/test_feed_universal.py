@@ -87,3 +87,36 @@ def test_fonte_com_erro_nao_derruba_as_outras(multi):
     client.post("/admin/fontes", json={"rede": "admitad", "url": "https://admitad.example/yml.xml"})
     res = run()["etapas"]["fontes"]["resultado"]
     assert res[0]["status"] == "falhou" and res[1]["novos"] == 1
+
+
+YML_COM_CATEGORIAS = """<?xml version="1.0" encoding="UTF-8"?>
+<yml_catalog><shop>
+<categories><category id="45d16feed7">Casa</category><category id="98edb85b00" parentId="45d16feed7">Ferramentas</category></categories>
+<offers>
+<offer id="L1"><name>Gravador a laser</name><url>https://bywiola.com/g/x/?ulp=1</url><price>1288.07</price>
+<currencyId>BRL</currencyId><categoryId>98edb85b00</categoryId><picture>https://img/l1.jpg</picture></offer>
+<offer id="L2"><name>Sem categoria conhecida</name><url>https://bywiola.com/g/y/</url><price>10</price>
+<categoryId>ffff0000aa</categoryId></offer>
+</offers></shop></yml_catalog>"""
+
+
+def test_yml_usa_nome_e_caminho_da_categoria_nunca_o_codigo():
+    itens = list(fu.ler(Resp(YML_COM_CATEGORIAS), {"rede": "admitad", "anunciante": "Geekbuying"}))
+    assert itens[0].category == "Casa > Ferramentas"
+    assert itens[1].category == ""  # código sem nome conhecido não vira categoria
+    assert fu.parece_codigo("45d16feed7") and fu.parece_codigo("1234")
+    assert not fu.parece_codigo("Decade") and not fu.parece_codigo("Fitness")
+
+
+def test_agente_cria_tema_com_nome_e_subid_oficial_da_rede(multi):
+    client, run = multi
+    FEEDS["https://admitad.example/geek.xml"] = YML_COM_CATEGORIAS
+    client.post("/admin/fontes", json={"rede": "admitad", "url": "https://admitad.example/geek.xml",
+                                       "anunciante": "Geekbuying", "subid": "SUBID"})
+    assert client.get("/admin/fontes").json()["painel"][0]["subid"] == "subid"
+    run()
+    nichos = [n["title"] for n in client.get("/public/nichos").json()["data"]]
+    assert nichos == ["Casa"] and not any(fu.parece_codigo(n) for n in nichos)
+    oferta = client.get("/public/ofertas?q=laser").json()["data"][0]
+    loc = client.get(f"/r/{oferta['id']}").headers["location"]
+    assert "subid=" in loc

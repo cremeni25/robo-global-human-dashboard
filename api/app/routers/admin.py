@@ -538,8 +538,17 @@ def listar_fontes(request: Request, db: Session = Depends(get_db), _: str = Depe
             "ambiente": [{"rede": f.get("rede"), "url": _mascara(f["url"])} for f in env]}
 
 
+# Parâmetro de rastreio oficial de cada rede (a grafia importa: o link ignora variações).
+SUBID_POR_REDE = {"admitad": "subid", "cj": "sid", "impact": "subId1", "rakuten": "u1", "awin": "clickref",
+                  "webgains": "clickref"}
+
+
 @router.post("/fontes", status_code=201)
 def adicionar_fonte(payload: FonteIn, db: Session = Depends(get_db), actor: str = Depends(require_admin)):
+    rede = payload.rede.strip().lower()
+    oficial = SUBID_POR_REDE.get(rede)
+    if oficial and (not payload.subid or payload.subid.lower() == oficial.lower()):
+        payload.subid = oficial
     if not is_safe_url(payload.url):
         raise HTTPException(status_code=422, detail="A URL do feed precisa comecar com https://")
     row, lista = _fontes(db)
