@@ -241,6 +241,17 @@ def _escolhas(db: Session, s: Settings, slug: str, p: dict, fixas: dict[str, lis
     return _automatico(db, s, p)
 
 
+def _lojas(db: Session, o: Oferta) -> list[dict[str, str]]:
+    """O mesmo produto em cada loja parceira (curadoria): o visitante escolhe onde comprar."""
+    lojas = [{"loja": o.provider, "url": f"/r/{o.id}"}]
+    if o.source == "curadoria" and o.external_product_id:
+        outras = db.scalars(select_ofertas_visiveis().where(
+            Oferta.external_product_id == o.external_product_id, Oferta.source == "curadoria",
+            Oferta.id != o.id).order_by(Oferta.platform))
+        lojas += [{"loja": x.provider, "url": f"/r/{x.id}"} for x in outras]
+    return lojas
+
+
 def _motivo(o: Oferta, i: int) -> dict[str, str]:
     """Motivo escrito para o produto (curadoria); sem ele, o texto padrão da faixa."""
     tr = o.translations or {}
@@ -264,7 +275,7 @@ def montar(db: Session, s: Settings) -> dict[str, Any]:
             if len(ofertas) < 2:
                 continue  # sem produtos bons, a página não vai ao ar
             escolhas = [{"nivel": {k: NIVEIS[i][k] for k in ("chave", "pt", "en", "es")}, "motivo": _motivo(o, i),
-                         "oferta": _oferta(o)} for i, o in enumerate(ofertas)]
+                         "oferta": _oferta(o), "lojas": _lojas(db, o)} for i, o in enumerate(ofertas)]
             detalhes[p["slug"]] = {**_resumo(tema, p, len(ofertas)), "considerar": p["considerar"],
                                    "tema_titulo": tema["titulo"], "tema_icone": tema["icone"], "escolhas": escolhas}
             itens.append(_resumo(tema, p, len(ofertas)))

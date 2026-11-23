@@ -5,7 +5,8 @@ export type Lang = "pt" | "en" | "es";
 export type Txt = Record<Lang, string>;
 export type ProblemaResumo = { slug: string; titulo: Txt; curto?: Txt; resumo: Txt; tema: string; produtos: number };
 export type Tema = { slug: string; titulo: Txt; icone: string; problemas: ProblemaResumo[] };
-export type Escolha = { nivel: { chave: string } & Txt; motivo: Txt; oferta: Produto };
+export type Loja = { loja: string; url: string };
+export type Escolha = { nivel: { chave: string } & Txt; motivo: Txt; oferta: Produto; lojas?: Loja[] };
 export type Problema = ProblemaResumo & { considerar: Txt[]; tema_titulo: Txt; tema_icone: string; escolhas: Escolha[] };
 
 // Espera no máximo 8 s por resposta e tenta de novo uma vez: o visitante nunca fica preso no "Carregando".

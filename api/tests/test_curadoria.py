@@ -28,9 +28,18 @@ def test_curadoria_preenche_os_seis_temas_com_links_da_amazon(settings):
     assert r.status_code in (302, 307)
     assert r.headers["location"].startswith("https://www.amazon.com.br/s?k=JBL+Flip+6&tag=roboglobal-20")
 
+    # mesmo produto também no Mercado Livre, com a etiqueta de afiliado
+    lojas = pag["escolhas"][1]["lojas"]
+    assert [l["loja"] for l in lojas] == ["Amazon", "Mercado Livre"]
+    r = client.get(lojas[1]["url"])
+    assert r.status_code in (302, 307) and r.headers["location"].startswith("https://")
+    cozinha = client.get("/public/problemas/cozinha-organizada").json()["data"]["escolhas"][0]["lojas"][1]
+    assert "naan132272" in client.get(cozinha["url"]).headers["location"]
+
     # aplicar de novo não duplica nada
     with client.app.state.sessionmaker() as db:
         assert aplicar(db, settings)["ofertas_criadas"] == 0
     from app.models import Oferta
     with client.app.state.sessionmaker() as db:
         assert db.query(Oferta).filter(Oferta.platform == "amazon").count() == 3 * len(CURADORIA)
+        assert db.query(Oferta).filter(Oferta.platform == "mercadolivre").count() == 3 * len(CURADORIA)
