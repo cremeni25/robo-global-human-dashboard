@@ -78,6 +78,7 @@ def test_ciclo_descobre_lojas_importa_e_publica_sem_link_manual(ambiente):
     r = run()
     info = r["etapas"]["admitad_lojas"]
     assert info["lojas_aprovadas"] == 2 and info["com_feed"] == 1 and info["sem_feed"] == ["Sem Feed WW"]
+    assert info["espacos_usados"] == [3025594]
     assert r["etapas"]["fontes"]["resultado"][0]["novos"] == 1
     ofertas = c.get("/public/ofertas").json()["data"]
     assert [o["title"] for o in ofertas] == ["Air fryer 5L"]
@@ -108,3 +109,21 @@ def test_nao_duplica_loja_ja_cadastrada_a_mao(ambiente):
     r = run()
     assert r["etapas"]["admitad_lojas"]["com_feed"] == 0
     assert r["etapas"]["fontes"]["total"] == 1
+
+
+def test_usa_id_do_link_quando_espaco_em_analise_nao_aparece(ambiente):
+    c, fake, run = ambiente
+    original = fake.__call__
+
+    class SemEspacos(FakeAdmitad):
+        def __call__(self, req, timeout):
+            if "/websites/" in req.full_url and "api.admitad.com" in req.full_url:
+                return R(json.dumps({"results": [], "_meta": {"count": 0}}))
+            return FakeAdmitad.__call__(self, req, timeout)
+    sem = SemEspacos()
+    c.post("/admin/fontes", json={"rede": "admitad", "url": "https://export.admitad.com/en/webmaster/websites/3025594/products/export_adv_products/?feed_id=99&currency=BRL",
+                                  "anunciante": "Outra", "subid": "subid"})
+    from app.aquisicao import executar_ciclo
+    r = executar_ciclo(c.app.state.sessionmaker, c.app.state.settings, "teste", sem)
+    info = r["etapas"]["admitad_lojas"]
+    assert info["espacos_api"] == 0 and info["espacos_usados"] == [3025594] and info["com_feed"] == 1

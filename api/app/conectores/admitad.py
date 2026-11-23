@@ -94,6 +94,12 @@ class AdmitadClient:
         return self._paginado(f"/statistics/actions/?date_start={ini:%d.%m.%Y}&date_end={fim:%d.%m.%Y}", limite=10000)
 
 
+def website_id_do_link(url: str) -> Optional[int]:
+    """O ID do espaço publicitário aparece no link de feed: .../websites/3025594/products/..."""
+    m = re.search(r"/websites/(\d+)/", url or "")
+    return int(m.group(1)) if m else None
+
+
 def _com_moeda(url: str, moeda: str = "BRL") -> str:
     p = urlsplit(url)
     q = dict(parse_qsl(p.query, keep_blank_values=True))
