@@ -145,3 +145,4 @@
 .rg-escolha-go{justify-content:center;margin-top:auto}
 .rg-rodape{text-align:center;color:#8aa5a8;font-size:12px;padding:18px 16px;background:#06141c}
 @media(max-width:520px){.rg-problemas{grid-template-columns:1fr}.rg-escolhas{grid-template-columns:1fr}}
+.rg-escolha-icone{aspect-ratio:4/3;max-height:200px;display:grid;place-items:center;font-size:64px;background:linear-gradient(135deg,#e9f6f2,#f7fbfa);border-radius:12px}

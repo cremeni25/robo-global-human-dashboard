@@ -119,7 +119,9 @@ class Settings:
     ia_cotacao_usd_brl: float = field(default_factory=lambda: _float("IA_COTACAO_USD_BRL", 5.5))
     # Lojas que podem aparecer ao público (as demais ficam só no banco). Separe por vírgula.
     lojas_confiaveis: list[str] = field(default_factory=lambda: [x.strip() for x in os.getenv(
-        "LOJAS_CONFIAVEIS", "AliExpress WW,Geekbuying").split(",") if x.strip()])
+        "LOJAS_CONFIAVEIS", "").split(",") if x.strip()])
+    # ID de Associado da Amazon (não é segredo: aparece em todo link de afiliado).
+    amazon_tag: str = field(default_factory=lambda: os.getenv("AMAZON_TAG", "roboglobal-20").strip())
     # Seleção automática de produtos nas páginas de problema (desligada: por palavra-chave
     # ela escolhe itens sem relação com o problema; o padrão é curadoria).
     problemas_automatico: bool = field(default_factory=lambda: os.getenv("PROBLEMAS_AUTOMATICO", "0") == "1")

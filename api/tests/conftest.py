@@ -33,6 +33,7 @@ def settings():
     s.importar_legado = False
     s.auto_catalogo_ia = False
     s.lojas_confiaveis = ["*"]  # filtro de lojas tem teste próprio
+    s.amazon_tag = ""  # curadoria Amazon tem teste próprio
     s.anthropic_api_key = ""
     s.epc_alvo = 0.5
     return s

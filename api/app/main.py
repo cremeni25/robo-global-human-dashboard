@@ -39,6 +39,13 @@ def create_app(settings: Optional[Settings] = None, start_scheduler: bool = True
     app.include_router(webhooks.legacy_router)
     app.include_router(admin.router)
 
+    log = logging.getLogger("robo_global")
+    try:  # produtos escolhidos a dedo para as páginas de problema
+        from .curadoria import aplicar
+        with app.state.sessionmaker() as db:
+            log.info("curadoria: %s", aplicar(db, settings))
+    except Exception:
+        log.exception("curadoria nao aplicada")
     if settings.importar_legado:
         from .migracao_legado import importar_legado
         importar_legado(engine, app.state.sessionmaker)
@@ -47,7 +54,6 @@ def create_app(settings: Optional[Settings] = None, start_scheduler: bool = True
     if start_scheduler:
         iniciar_agendador(app.state.sessionmaker, settings)
 
-    log = logging.getLogger("robo_global")
     log.info("Robo Global %s | admin=%s | hotmart=%s | webhook=%s", VERSION,
              "configurado" if settings.admin_tokens else "FECHADO",
              "configurado" if settings.hotmart_hottok else "fechado",
