@@ -112,7 +112,16 @@ def executar(db: Session, s: Settings) -> dict[str, Any]:
     out: dict[str, Any] = {}
     if s.auto_aprovar_anunciantes:
         out["anunciantes_aprovados"] = aprovar_anunciantes(db)
-    if s.auto_taxonomia:
+    usou_ia = False
+    if s.auto_catalogo_ia and s.anthropic_api_key:
+        from .agente_catalogo import organizar_com_ia
+        try:
+            out["catalogo_ia"] = organizar_com_ia(db, s)
+            usou_ia = True
+        except Exception as exc:  # sem IA, o organizador simples assume neste ciclo
+            db.rollback()
+            out["catalogo_ia"] = {"status": "falhou", "erro": type(exc).__name__, "motivo": str(exc)[:300]}
+    if s.auto_taxonomia and not usou_ia:
         out.update(organizar_taxonomia(db))
     if s.auto_decisoes:
         out.update(decidir(db, s))

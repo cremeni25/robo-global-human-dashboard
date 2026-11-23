@@ -20,6 +20,7 @@ O motor de aquisição (`api/app/aquisicao.py`) roda sozinho a cada 6 horas:
 |---|---|---|
 | Aprovação | Libera todo anunciante cuja afiliação a rede confirmou | `AUTO_APROVAR_ANUNCIANTES=0` |
 | Taxonomia | Transforma categorias de produtos em nicho › subnicho › dor publicados e liga os produtos | `AUTO_TAXONOMIA=0` |
+| Catálogo IA | Com `ANTHROPIC_API_KEY`, traduz e agrupa as categorias das lojas em poucos temas por necessidade (PT, EN, ES) e permite buscar em português. Cada categoria é enviada uma única vez | `AUTO_CATALOGO_IA=0` |
 | Decisão | Aplica PAUSAR, ESCALAR e OTIMIZAR conforme os resultados reais | `AUTO_DECISOES=0` |
 
 Guardas que continuam sempre ativas: só vai ao ar produto de anunciante com afiliação confirmada pela rede e com link https; nenhuma dor vazia é publicada; tudo fica na auditoria com o autor "agente"; e o botão de pausa geral vale para tudo.

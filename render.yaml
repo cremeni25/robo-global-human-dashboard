@@ -26,6 +26,8 @@ services:
         sync: false
       - key: AWIN_FEED_URL         # copiar do core-v1
         sync: false
+      - key: ANTHROPIC_API_KEY     # console.anthropic.com > API keys (agente de catálogo com IA)
+        sync: false
       - key: WEBHOOK_TOKEN
         generateValue: true
       - key: VISITOR_HASH_SALT
