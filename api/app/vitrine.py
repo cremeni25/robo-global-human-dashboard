@@ -38,11 +38,21 @@ def _amostra(ids: list[str], n: int, chave: str) -> list[str]:
     return rnd.sample(ids, min(n, len(ids)))
 
 
+LOJAS: list[str] = []  # definido em montar()
+
+
 def _com_foto_e_preco(q):
-    return q.where(Oferta.image_url != "", Oferta.price.is_not(None), Oferta.price > 0)
+    from .problemas import filtro_lojas_publicas
+
+    class _S:
+        lojas_confiaveis = LOJAS
+    return q.where(filtro_lojas_publicas(_S), Oferta.image_url != "", Oferta.price.is_not(None), Oferta.price > 0)
 
 
-def montar(db: Session) -> dict[str, Any]:
+def montar(db: Session, lojas: list[str] | None = None) -> dict[str, Any]:
+    global LOJAS
+    if lojas is not None:
+        LOJAS = list(lojas)
     visiveis = select_ofertas_visiveis().subquery()
     contagem = (select(DorOferta.dor_id, func.count().label("n"))
                 .join(visiveis, visiveis.c.id == DorOferta.oferta_id)
@@ -91,16 +101,16 @@ def _editorial(x) -> dict[str, Any]:
             "translations": x.translations or {}}
 
 
-def ids_em_vitrine(db: Session) -> list[str]:
-    data = obter(db, renovar=True)
+def ids_em_vitrine(db: Session, lojas: list[str] | None = None) -> list[str]:
+    data = obter(db, renovar=True, lojas=lojas)
     return [o["id"] for o in data["achados"]] + [o["id"] for s in data["secoes"] for o in s["itens"]]
 
 
-def obter(db: Session, renovar: bool = False, ttl: float = 600) -> dict[str, Any]:
+def obter(db: Session, renovar: bool = False, ttl: float = 600, lojas: list[str] | None = None) -> dict[str, Any]:
     with _lock:
         if not renovar and _cache["data"] is not None and time.time() - _cache["ts"] < ttl:
             return _cache["data"]
-    data = montar(db)
+    data = montar(db, lojas)
     with _lock:
         _cache.update(ts=time.time(), data=data)
     return data

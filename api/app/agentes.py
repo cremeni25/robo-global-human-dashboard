@@ -123,7 +123,9 @@ def executar(db: Session, s: Settings) -> dict[str, Any]:
         # Gratuito: dá tema a tudo que a IA não cobriu (sem orçamento ou sem resultado ainda).
         out.update(organizar_taxonomia(db))
     from .vitrine import limpar_cache
+    from .problemas import limpar_cache as limpar_problemas
     limpar_cache()
+    limpar_problemas()
     # Títulos em português só para o que o público vê primeiro (mesmo orçamento).
     if s.auto_catalogo_ia and s.anthropic_api_key:
         from .agente_catalogo import traduzir_vitrine

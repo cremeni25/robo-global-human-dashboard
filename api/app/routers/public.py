@@ -94,20 +94,37 @@ def solucoes(dor_id: str, db: Session = Depends(get_db), limit: int = Query(defa
     return {"status": "OK", "total": total, "data": items}
 
 
+@router.get("/public/problemas")
+def problemas(request: Request, db: Session = Depends(get_db)):
+    """Temas e problemas que têm página no ar (com pelo menos 2 produtos bons)."""
+    from .. import problemas as pb
+    return {"status": "OK", "temas": pb.obter(db, request.app.state.settings)["temas"]}
+
+
+@router.get("/public/problemas/{slug}")
+def problema(slug: str, request: Request, db: Session = Depends(get_db)):
+    from .. import problemas as pb
+    d = pb.obter(db, request.app.state.settings)["detalhes"].get(slug)
+    if d is None:
+        raise HTTPException(status_code=404, detail="Pagina nao encontrada")
+    return {"status": "OK", "data": d}
+
+
 @router.get("/public/vitrine")
-def vitrine(db: Session = Depends(get_db)):
-    """Primeira tela do site: seções por tema e achados baratos, girando semanalmente."""
+def vitrine(request: Request, db: Session = Depends(get_db)):
+    """Seções por tema e achados baratos (só lojas confiáveis), girando semanalmente."""
     from .. import vitrine as v
-    return v.obter(db)
+    return v.obter(db, lojas=request.app.state.settings.lojas_confiaveis)
 
 
 @router.get("/public/ofertas")
-def ofertas(db: Session = Depends(get_db), q: str = Query(default="", max_length=100),
+def ofertas(request: Request, db: Session = Depends(get_db), q: str = Query(default="", max_length=100),
             dor: Optional[str] = Query(default=None, max_length=36),
             language: str = Query(default="", max_length=10), market: str = Query(default="", max_length=10),
             page: int = Query(default=1, ge=1, le=10_000), limit: int = Query(default=48, ge=1, le=100)):
     """Catálogo público paginado (preparado para centenas de milhares de itens)."""
-    query = select_ofertas_visiveis()
+    from ..problemas import filtro_lojas_publicas
+    query = select_ofertas_visiveis().where(filtro_lojas_publicas(request.app.state.settings))
     if q.strip():
         term = f"%{q.strip()}%"
         # Busca também pelos temas (em português, com palavras-chave da IA):
