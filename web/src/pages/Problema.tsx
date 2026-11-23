@@ -7,11 +7,11 @@ import { compartilhar, linkSaida, tituloOferta } from "../rastreio";
 
 const copy = {
   pt: { consider: "Antes de escolher", picks: "Três boas opções", go: "Ver na loja", share: "Compartilhar", back: "Ver outros problemas", voltar: "Voltar para",
-    loading: "Carregando…", missing: "Esta página não está disponível no momento.", error: "Não foi possível carregar agora.", store: "Vendido e entregue por", amazon: "Ver preço na Amazon", onAmazon: "Disponível na Amazon.com.br" },
+    loading: "Carregando…", missing: "Esta página não está disponível no momento.", error: "Não foi possível carregar agora.", store: "Vendido e entregue por", amazon: "Ver preço na Amazon", onAmazon: "Disponível na Amazon.com.br", na: "Ver na", ambas: "Disponível na Amazon e no Mercado Livre", lojas: "Compare o preço nas duas lojas:" },
   en: { consider: "Before you choose", picks: "Three good options", go: "View in store", share: "Share", back: "See other problems", voltar: "Back to",
-    loading: "Loading…", missing: "This page isn't available right now.", error: "We couldn't load this right now.", store: "Sold and shipped by", amazon: "See price on Amazon", onAmazon: "Available on Amazon.com.br" },
+    loading: "Loading…", missing: "This page isn't available right now.", error: "We couldn't load this right now.", store: "Sold and shipped by", amazon: "See price on Amazon", onAmazon: "Available on Amazon.com.br", na: "View on", ambas: "Available on Amazon and Mercado Livre", lojas: "Compare the price at both stores:" },
   es: { consider: "Antes de elegir", picks: "Tres buenas opciones", go: "Ver en la tienda", share: "Compartir", back: "Ver otros problemas", voltar: "Volver a",
-    loading: "Cargando…", missing: "Esta página no está disponible en este momento.", error: "No pudimos cargar ahora.", store: "Vendido y enviado por", amazon: "Ver precio en Amazon", onAmazon: "Disponible en Amazon.com.br" },
+    loading: "Cargando…", missing: "Esta página no está disponible en este momento.", error: "No pudimos cargar ahora.", store: "Vendido y enviado por", amazon: "Ver precio en Amazon", onAmazon: "Disponible en Amazon.com.br", na: "Ver en", ambas: "Disponible en Amazon y Mercado Livre", lojas: "Compara el precio en las dos tiendas:" },
 };
 const locais = { pt: "pt-BR", en: "en-US", es: "es-ES" } as const;
 
@@ -53,8 +53,15 @@ export default function Problema() {
             <h3 className={o.image_url ? "" : "rg-escolha-titulo"}>{tituloOferta(o, lang)}</h3>
             <p className="rg-motivo">{e.motivo[lang]}</p>
             {preco(o.price, o.currency) && <strong className="rg-card-price">{preco(o.price, o.currency)}</strong>}
-            {loja && <small className="rg-loja">{amazon ? t.onAmazon : t.store + " " + loja}</small>}
-            <a className="rg-retry rg-escolha-go" href={linkSaida(o.url)} target="_blank" rel="noopener noreferrer sponsored">{amazon ? t.amazon : t.go} ↗</a>
+            {(e.lojas?.length ?? 0) > 1 ? <>
+              <small className="rg-loja">{t.lojas}</small>
+              <div className="rg-lojas">{e.lojas!.map(l =>
+                <a key={l.url} className={"rg-retry rg-escolha-go rg-loja-" + (l.loja === "Amazon" ? "amazon" : "ml")} href={linkSaida(l.url)} target="_blank" rel="noopener noreferrer sponsored">{l.loja} ↗</a>)}
+              </div></>
+            : <>
+              {loja && <small className="rg-loja">{amazon ? t.onAmazon : t.store + " " + loja}</small>}
+              <a className="rg-retry rg-escolha-go" href={linkSaida(o.url)} target="_blank" rel="noopener noreferrer sponsored">{amazon ? t.amazon : t.go} ↗</a>
+            </>}
           </article>;
         })}</div>
       </section>

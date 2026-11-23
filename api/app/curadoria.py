@@ -199,6 +199,41 @@ def link_amazon(busca: str, tag: str) -> str:
     return f"https://www.amazon.com.br/s?k={quote_plus(busca)}&tag={quote_plus(tag)}"
 
 
+PLATAFORMA_ML = "mercadolivre"
+LOJA_ML = "Mercado Livre"
+
+
+def _aplicar_mercadolivre(db: Session) -> int:
+    """Mesmo produto, segunda loja: oferta do Mercado Livre com a mesma chave da curadoria."""
+    from .curadoria_ml import LINKS_ML
+    itens = {f"{slug}:{n}": it for slug, lista in CURADORIA.items() for n, it in enumerate(lista)}
+    existentes = {o.external_product_id: o for o in db.scalars(select(Oferta).where(Oferta.platform == PLATAFORMA_ML))}
+    criadas = 0
+    for ext, link in LINKS_ML.items():
+        it = itens.get(ext)
+        if it is None:
+            continue
+        o = existentes.get(ext)
+        if o is None:
+            o = Oferta(id=new_id(), platform=PLATAFORMA_ML, external_product_id=ext, source="curadoria")
+            db.add(o)
+            criadas += 1
+        o.title = it["titulo"]["pt"][:200]
+        o.description = it["motivo"]["pt"]
+        o.translations = {l: {"title": it["titulo"][l], "description": it["motivo"][l]} for l in ("pt", "en", "es")}
+        o.kind, o.provider, o.market, o.language, o.currency = "afiliado", LOJA_ML, "BR", "pt", "BRL"
+        o.destination_url = link
+        o.subid_param = None
+        o.image_url, o.price = "", None
+        o.category = "curadoria > " + ext.split(":")[0]
+        o.active = o.published = True
+        flag_modified(o, "translations")
+    for ext, o in existentes.items():
+        if ext not in LINKS_ML:
+            o.active = False
+    return criadas
+
+
 def aplicar(db: Session, s: Settings) -> dict[str, int]:
     """Cria/atualiza as ofertas da curadoria e fixa cada trio na sua página."""
     if not s.amazon_tag:
@@ -232,6 +267,7 @@ def aplicar(db: Session, s: Settings) -> dict[str, int]:
     for ext, o in existentes.items():  # saiu da lista: sai do ar
         if ext not in usados:
             o.active = False
+    criadas += _aplicar_mercadolivre(db)
     row = db.get(Configuracao, "problemas_escolhas")
     valor = dict(row.value) if row and isinstance(row.value, dict) else {}
     valor.update(fixas)
