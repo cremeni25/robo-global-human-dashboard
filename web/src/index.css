@@ -137,8 +137,8 @@
 .rg-escolhas{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
 .rg-escolha{display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid #e1e9e6;border-radius:18px;padding:16px}
 .rg-nivel{align-self:flex-start;background:#e3f4ef;color:#0b5b54;font-weight:800;font-size:12px;border-radius:999px;padding:5px 11px}
-.rg-escolha-img{aspect-ratio:1/1;background:#eef3f1;border-radius:12px;overflow:hidden}
-.rg-escolha-img img{width:100%;height:100%;object-fit:cover;display:block}
+.rg-escolha-img{aspect-ratio:4/3;max-height:280px;background:#fff;border-radius:12px;overflow:hidden}
+.rg-escolha-img img{width:100%;height:100%;object-fit:contain;display:block}
 .rg-escolha h3{font-size:16px;line-height:1.35;margin:4px 0 0;color:#1b3237}
 .rg-motivo{margin:0;color:#5a6f70;font-size:14px;line-height:1.5}
 .rg-loja{color:#6a7c7c}
