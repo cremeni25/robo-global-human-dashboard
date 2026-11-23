@@ -37,7 +37,7 @@ CAMPOS = {
     "currency": ("currency", "currencyid", "currency_code"),
     "image": ("image_link", "image_url", "imageurl", "large_image", "merchant_image_url", "aw_image_url",
               "picture", "image", "thumbnail"),
-    "category": ("product_type", "category_name", "advertisercategory", "merchant_category", "category",
+    "category": ("category_path", "product_type", "category_name", "advertisercategory", "merchant_category", "category",
                  "categoryid", "google_product_category", "category_path"),
     "description": ("description", "short_description", "product_short_description", "summary"),
     "merchant": ("merchant_name", "advertiser_name", "advertisername", "programname", "program_name",
@@ -83,6 +83,14 @@ def _preco(valor: str, moeda_padrao: str) -> tuple[Optional[Decimal], str]:
         return None, moeda
 
 
+ID_LIKE = re.compile(r"^(?:(?=[0-9a-f]*\d)[0-9a-f]{6,}|\d+)$", re.I)
+
+
+def parece_codigo(texto: str) -> bool:
+    """Categoria que é só um identificador (ex.: '45d16feed7', '1234') e não um nome."""
+    return bool(ID_LIKE.match(texto.strip()))
+
+
 def _produto(record: dict[str, str], fonte: dict[str, Any]) -> Optional[ProdutoFeed]:
     title, link = _pick(record, "title"), _pick(record, "link")
     if not title or not link:
@@ -96,7 +104,8 @@ def _produto(record: dict[str, str], fonte: dict[str, Any]) -> Optional[ProdutoF
     brand = _pick(record, "brand")
     return ProdutoFeed(
         merchant_id=slug(merchant), merchant_name=merchant[:200], product_id=pid[:120], name=title[:200], url=link,
-        price=price, currency=currency[:3], category=_pick(record, "category")[:300],
+        price=price, currency=currency[:3],
+        category=("" if parece_codigo(_pick(record, "category")) else _pick(record, "category"))[:300],
         image_url=_pick(record, "image")[:2000],
         description=((brand + " · ") if brand else "") + _pick(record, "description")[:1800],
         language=str(fonte.get("idioma") or "pt")[:10], raw={},
@@ -140,9 +149,21 @@ def _ler_csv(buf) -> Iterator[dict[str, str]]:
         yield {k: v for k, v in zip(fields, row)}
 
 
+def _caminho(cid: str, cats: dict[str, tuple[str, str]]) -> str:
+    """YML: categoryId → 'Pai > Filho' usando <categories><category id parentId>Nome</category>."""
+    nomes, vistos = [], set()
+    while cid and cid in cats and cid not in vistos:
+        vistos.add(cid)
+        nome, pai = cats[cid]
+        nomes.append(nome)
+        cid = pai
+    return " > ".join(reversed(nomes))
+
+
 def _ler_xml(buf) -> Iterator[dict[str, str]]:
     record: Optional[dict[str, str]] = None
     depth = 0
+    cats: dict[str, tuple[str, str]] = {}  # YML: id → (nome, parentId)
     for event, el in iterparse(buf, events=("start", "end")):
         tag = _local(el.tag)
         if event == "start":
@@ -152,10 +173,16 @@ def _ler_xml(buf) -> Iterator[dict[str, str]]:
                 depth += 1
             continue
         if record is None:
+            if tag == "category" and el.attrib.get("id") and (el.text or "").strip():
+                cats[el.attrib["id"]] = (el.text.strip(), el.attrib.get("parentId", ""))
             continue
         if tag in ITEM_TAGS and depth == 0:
             for k, v in el.attrib.items():  # YML: <offer id="...">
                 record.setdefault(_local(k), v)
+            if record.get("categoryid") and cats:
+                caminho = _caminho(record["categoryid"], cats)
+                if caminho:
+                    record["category_path"] = caminho
             yield record
             record = None
             el.clear()
