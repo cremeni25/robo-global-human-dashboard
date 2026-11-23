@@ -146,3 +146,7 @@
 .rg-rodape{text-align:center;color:#8aa5a8;font-size:12px;padding:18px 16px;background:#06141c}
 @media(max-width:520px){.rg-problemas{grid-template-columns:1fr}.rg-escolhas{grid-template-columns:1fr}}
 .rg-escolha-icone{aspect-ratio:4/3;max-height:200px;display:grid;place-items:center;font-size:64px;background:linear-gradient(135deg,#e9f6f2,#f7fbfa);border-radius:12px}
+.rg-nivel b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#0c605c;color:#fff;font-size:11px;margin-right:4px}
+.rg-escolha{border-top:4px solid #8de9d0}
+.rg-escolha-titulo{font:800 21px/1.3 Manrope,sans-serif !important;color:#0b3a3d !important;margin-top:10px !important}
+.rg-escolha .rg-motivo{font-size:15px}
