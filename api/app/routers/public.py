@@ -94,6 +94,13 @@ def solucoes(dor_id: str, db: Session = Depends(get_db), limit: int = Query(defa
     return {"status": "OK", "total": total, "data": items}
 
 
+@router.get("/public/vitrine")
+def vitrine(db: Session = Depends(get_db)):
+    """Primeira tela do site: seções por tema e achados baratos, girando semanalmente."""
+    from .. import vitrine as v
+    return v.obter(db)
+
+
 @router.get("/public/ofertas")
 def ofertas(db: Session = Depends(get_db), q: str = Query(default="", max_length=100),
             dor: Optional[str] = Query(default=None, max_length=36),

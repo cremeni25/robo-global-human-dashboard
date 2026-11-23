@@ -55,6 +55,25 @@ def resumo(request: Request, db: Session = Depends(get_db), actor: str = Depends
     return data
 
 
+@router.get("/canais")
+def canais(db: Session = Depends(get_db), _: str = Depends(require_admin)):
+    """Resultado por canal de divulgação (utm_source): cliques e vendas, 30 dias e total."""
+    from datetime import timedelta
+    from ..models import Clique, Conversao, utcnow
+    desde = utcnow() - timedelta(days=30)
+    canal = func.coalesce(func.nullif(Clique.utm_source, ""), "direto")
+    linhas = db.execute(select(canal, func.count(), func.count().filter(Clique.created_at >= desde))
+                        .group_by(canal)).all()
+    vendas = dict(db.execute(select(canal, func.count()).join(Conversao, Conversao.clique_id == Clique.id)
+                             .where(Conversao.status == "approved").group_by(canal)).all())
+    comissao = dict(db.execute(select(canal, func.sum(Conversao.commission_amount))
+                               .join(Conversao, Conversao.clique_id == Clique.id)
+                               .where(Conversao.status == "approved").group_by(canal)).all())
+    data = [{"canal": c, "cliques_total": t, "cliques_30d": t30, "vendas": vendas.get(c, 0),
+             "comissao": float(comissao.get(c) or 0)} for c, t, t30 in linhas]
+    return {"data": sorted(data, key=lambda x: -x["cliques_total"])}
+
+
 @router.get("/metricas")
 def metricas(days: Optional[int] = Query(default=None, ge=1, le=3650),
              db: Session = Depends(get_db), _: str = Depends(require_admin)):

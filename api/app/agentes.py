@@ -122,6 +122,17 @@ def executar(db: Session, s: Settings) -> dict[str, Any]:
     if s.auto_taxonomia:
         # Gratuito: dá tema a tudo que a IA não cobriu (sem orçamento ou sem resultado ainda).
         out.update(organizar_taxonomia(db))
+    from .vitrine import limpar_cache
+    limpar_cache()
+    # Títulos em português só para o que o público vê primeiro (mesmo orçamento).
+    if s.auto_catalogo_ia and s.anthropic_api_key:
+        from .agente_catalogo import traduzir_vitrine
+        try:
+            out["vitrine_ia"] = traduzir_vitrine(db, s)
+        except Exception as exc:
+            db.rollback()
+            out["vitrine_ia"] = {"status": "falhou", "erro": type(exc).__name__, "motivo": str(exc)[:300]}
+
     if s.auto_decisoes:
         out.update(decidir(db, s))
     return out

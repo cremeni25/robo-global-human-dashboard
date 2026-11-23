@@ -90,6 +90,30 @@ function Login({ onToken }: { onToken: (t: string) => void }) {
       <button className="adm-btn">Entrar</button></form>{err && <p className="adm-err">{err}</p>}</div>;
 }
 
+const SITE = "https://www.roboglobal.com.br";
+const CANAIS: [string, string, string][] = [
+  ["Instagram (link na bio)", "instagram", "/links"], ["TikTok (link na bio)", "tiktok", "/links"],
+  ["YouTube (descrição)", "youtube", "/links"], ["Facebook", "facebook", "/"],
+  ["WhatsApp (grupos e status)", "whatsapp", "/"], ["E-mail", "email", "/"],
+];
+
+function Divulgacao({ run }: { run: Run }) {
+  const [canais] = useData(run, "/admin/canais");
+  const [copiado, setCopiado] = useState("");
+  const link = (fonte: string, pagina: string) => `${SITE}${pagina}?utm_source=${fonte}&utm_medium=divulgacao`;
+  const copiar = async (url: string) => { try { await navigator.clipboard.writeText(url); setCopiado(url); } catch { setCopiado(""); } };
+  return <Card title="Divulgação: links por canal e resultado de cada um">
+    <p className="adm-muted">Entregue à divulgadora o link do canal em que ela publica. Cada clique e cada venda ficam atribuídos a esse canal, e a tabela abaixo mostra o que dá resultado.</p>
+    <table className="adm-table"><thead><tr><th>Canal</th><th>Link para usar</th><th></th></tr></thead><tbody>
+      {CANAIS.map(([nome, fonte, pagina]) => { const url = link(fonte, pagina); return <tr key={fonte}><td>{nome}</td><td className="adm-muted" style={{ wordBreak: "break-all" }}>{url}</td>
+        <td><button className="adm-btn" onClick={() => copiar(url)}>{copiado === url ? "Copiado ✓" : "Copiar"}</button></td></tr>; })}
+    </tbody></table>
+    {canais?.data?.length ? <table className="adm-table"><thead><tr><th>Canal</th><th>Cliques (30 dias)</th><th>Cliques (total)</th><th>Vendas</th><th>Comissão</th></tr></thead><tbody>
+      {canais.data.map((c: Json) => <tr key={c.canal}><td>{c.canal}</td><td>{c.cliques_30d}</td><td>{c.cliques_total}</td><td>{c.vendas}</td><td>{money(c.comissao)}</td></tr>)}
+    </tbody></table> : <p className="adm-muted">Ainda não houve cliques. Assim que a divulgação começar, o resultado de cada canal aparece aqui.</p>}
+  </Card>;
+}
+
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return <section className="adm-card"><h2>{title}</h2>{children}</section>;
 }
@@ -120,6 +144,7 @@ function Geral({ run }: { run: Run }) {
         ["Cliques (30 dias)", t.cliques], ["Vendas (30 dias)", t.vendas]].map(([k, v]) => <div key={k}><strong>{v}</strong><span>{k}</span></div>)}</div>
       <p className="adm-muted">Regra: a IA gasta no máximo US$ {resumo.ia.teto_teste_usd.toFixed(2)} de teste mais {Math.round(resumo.ia.fracao_comissao * 100)}% das comissões aprovadas. Sem saldo, ela para sozinha e o organizador gratuito continua. Depois da organização inicial, a IA só trabalha em produtos que já tiveram clique ou venda. {resumo.ia.chamadas} chamada(s) à IA até agora.</p>
     </Card>}
+    <Divulgacao run={run} />
     <Card title="Recomendações aguardando sua decisão">
       <button className="adm-btn" onClick={async () => { await run("/admin/decisoes/gerar", { method: "POST" }, r => `${r.criadas} nova(s) recomendação(ões).`); reload(); }}>Analisar dados e gerar recomendações</button>
       {decisoes?.data?.length ? <table className="adm-table"><thead><tr><th>Oferta</th><th>Recomendação</th><th>Motivo</th><th></th></tr></thead><tbody>

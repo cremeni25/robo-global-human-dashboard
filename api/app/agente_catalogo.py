@@ -366,3 +366,98 @@ def organizar_com_ia(db: Session, s: Settings, chamar: Optional[Chamador] = None
             {k: v for k, v in out.items() if isinstance(v, (int, float))})
     db.commit()
     return out
+
+
+# ------------------------------------------------------------------ títulos da vitrine
+
+SCHEMA_TITULOS = {
+    "type": "object",
+    "properties": {"itens": {"type": "array", "items": {
+        "type": "object",
+        "properties": {"id": {"type": "string"}, "pt": {"type": "string"}, "es": {"type": "string"}},
+        "required": ["id", "pt", "es"], "additionalProperties": False}}},
+    "required": ["itens"], "additionalProperties": False,
+}
+SISTEMA_TITULOS = """Você escreve títulos de produtos para uma vitrine brasileira.
+Para cada produto recebido (id e título original, em geral em inglês e cheio de palavras-chave), escreva:
+- pt: título curto e natural em português do Brasil (até 70 caracteres), dizendo claramente o que é o produto;
+- es: o equivalente em espanhol.
+Sem exageros nem promessas, sem marcas inventadas, sem emojis. Mantenha medidas e quantidades relevantes.
+Devolva todos os ids recebidos, exatamente como vieram."""
+LOTE_TITULOS = 60
+
+
+def _chamador_titulos(api_key: str) -> Chamador:
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=api_key, max_retries=3, timeout=300)
+
+    def chamar(sistema: str, conteudo: str) -> dict[str, Any]:
+        resp = client.beta.messages.create(
+            model=MODELO, max_tokens=MAX_SAIDA,
+            betas=["server-side-fallback-2026-07-01"], fallbacks="default",
+            system=sistema, messages=[{"role": "user", "content": conteudo}],
+            output_config={"effort": "low", "format": {"type": "json_schema", "schema": SCHEMA_TITULOS}},
+        )
+        uso = {"entrada": resp.usage.input_tokens, "saida": resp.usage.output_tokens}
+        if resp.stop_reason in ("refusal", "max_tokens"):
+            return {"_uso": uso, "_erro": f"resposta incompleta: {resp.stop_reason}"}
+        dados = json.loads(next(b.text for b in resp.content if b.type == "text"))
+        dados["_uso"] = uso
+        return dados
+
+    return chamar
+
+
+def _registrar_gasto(estado: dict[str, Any], resp: dict[str, Any]) -> float:
+    uso = resp.get("_uso") or {}
+    custo = custo_usd(int(uso.get("entrada", 0)), int(uso.get("saida", 0)))
+    mes = utcnow().strftime("%Y-%m")
+    estado["gasto_usd"] = round(float(estado["gasto_usd"]) + custo, 6)
+    estado["gasto_por_mes"][mes] = round(float(estado["gasto_por_mes"].get(mes, 0.0)) + custo, 6)
+    estado["chamadas"] = int(estado["chamadas"]) + 1
+    return custo
+
+
+def traduzir_vitrine(db: Session, s: Settings, chamar: Optional[Chamador] = None) -> dict[str, Any]:
+    """Traduz só os títulos dos produtos que estão na vitrine (o que o público vê primeiro),
+    dentro do mesmo orçamento amarrado às vendas."""
+    from . import vitrine
+    if chamar is None:
+        if not s.anthropic_api_key:
+            return {"status": "sem_chave"}
+        chamar = _chamador_titulos(s.anthropic_api_key)
+    ids = vitrine.ids_em_vitrine(db)
+    pendentes = [o for o in db.scalars(select(Oferta).where(Oferta.id.in_(ids)))
+                 if not ((o.translations or {}).get("pt") or {}).get("title")] if ids else []
+    out: dict[str, Any] = {"titulos_traduzidos": 0, "custo_usd": 0.0}
+    estado = _estado(db)
+    for i in range(0, len(pendentes), LOTE_TITULOS):
+        if orcamento(db, s, estado)["saldo_usd"] < CUSTO_MAX_CHAMADA:
+            out["status"] = "orcamento_esgotado"
+            break
+        lote = pendentes[i:i + LOTE_TITULOS]
+        resp = chamar(SISTEMA_TITULOS, "\n".join(f"{o.id}\t{o.title}" for o in lote))
+        out["custo_usd"] = round(out["custo_usd"] + _registrar_gasto(estado, resp), 6)
+        _salvar(db, estado)
+        if resp.get("_erro"):
+            raise RuntimeError(str(resp["_erro"]))
+        por_id = {o.id: o for o in lote}
+        for item in resp.get("itens", []):
+            o = por_id.get(str(item.get("id", "")))
+            pt, es = str(item.get("pt", "")).strip()[:200], str(item.get("es", "")).strip()[:200]
+            if o is None or not pt:
+                continue
+            tr = dict(o.translations or {})
+            tr["pt"] = {**(tr.get("pt") or {}), "title": pt}
+            if es:
+                tr["es"] = {**(tr.get("es") or {}), "title": es}
+            o.translations = tr
+            flag_modified(o, "translations")
+            out["titulos_traduzidos"] += 1
+        db.commit()
+    if out["titulos_traduzidos"]:
+        vitrine.limpar_cache()
+        auditar(db, AGENTE, "vitrine.titulos_ia", "vitrine", "titulos", out)
+        db.commit()
+    return out
