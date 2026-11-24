@@ -195,14 +195,67 @@ CURADORIA: dict[str, list[dict[str, Any]]] = {
 }
 
 
-# Páginas que reúnem produtos já escolhidos acima (mesma oferta, mesmas lojas e motivos).
-REFERENCIAS: dict[str, list[str]] = {
-    "presente-musica": ["som-para-reunir:0", "fone-sem-fio:0", "som-para-reunir:1"],
-    "presente-treino": ["treinar-em-casa:1", "dores-nas-costas:2", "roupa-de-treino:2"],
-    "presente-pet": ["passeio-seguro:2", "pet-sozinho-em-casa:0", "pet-sozinho-em-casa:1"],
-    "presente-casa": ["relaxar-em-casa:1", "dormir-melhor:2", "limpeza-facil:2"],
-    "presente-tecnologia": ["bateria-do-celular:1", "fone-sem-fio:1", "acompanhar-peso:1"],
-}
+# Presentes de Natal: produtos próprios, que não se repetem nas outras páginas.
+CURADORIA.update({
+    "presente-musica": [
+        item("Fone de ouvido JBL Tune 520BT", "JBL Tune 520BT headphones", "Auriculares JBL Tune 520BT",
+             "JBL Tune 520BT",
+             "Fone sem fio confortável, com bateria para a semana toda.", "Comfortable wireless headphones with week-long battery.", "Auriculares inalámbricos cómodos, con batería para toda la semana."),
+        item("Echo Pop com Alexa", "Echo Pop with Alexa", "Echo Pop con Alexa",
+             "Echo Pop Alexa",
+             "Música por comando de voz e ajuda no dia a dia.", "Voice-controlled music and everyday help.", "Música por voz y ayuda en el día a día."),
+        item("Caixa de som JBL Clip 5", "JBL Clip 5 speaker", "Altavoz JBL Clip 5",
+             "JBL Clip 5",
+             "Leva para qualquer lugar: prende na mochila e é à prova d'água.", "Clips onto a bag and is waterproof.", "Se engancha en la mochila y es resistente al agua."),
+    ],
+    "presente-treino": [
+        item("Mochila Nike Brasilia", "Nike Brasilia backpack", "Mochila Nike Brasilia",
+             "mochila Nike Brasilia",
+             "Clássica para levar tudo à academia.", "A classic for carrying everything to the gym.", "Clásica para llevar todo al gimnasio."),
+        item("Copo térmico Stanley Quencher", "Stanley Quencher tumbler", "Vaso térmico Stanley Quencher",
+             "copo térmico Stanley Quencher",
+             "Água gelada o treino inteiro, de uma marca que virou febre.", "Cold water all workout long, from a cult brand.", "Agua fría todo el entrenamiento, de una marca de moda."),
+        item("Relógio Garmin Forerunner 55", "Garmin Forerunner 55 watch", "Reloj Garmin Forerunner 55",
+             "Garmin Forerunner 55",
+             "GPS e planos de treino de uma marca referência em corrida.", "GPS and training plans from a running leader.", "GPS y planes de entrenamiento de una marca líder en running."),
+    ],
+    "presente-pet": [
+        item("Brinquedo KONG Classic", "KONG Classic toy", "Juguete KONG Classic",
+             "brinquedo KONG Classic",
+             "O brinquedo resistente mais famoso do mundo pet.", "The world's best-known tough pet toy.", "El juguete resistente más famoso del mundo pet."),
+        item("Escova FURminator", "FURminator brush", "Cepillo FURminator",
+             "escova FURminator",
+             "Menos pelo pela casa e um pet mais confortável.", "Less shedding at home and a happier pet.", "Menos pelo en casa y una mascota más cómoda."),
+        item("Caixa de transporte Ferplast", "Ferplast pet carrier", "Transportín Ferplast",
+             "caixa de transporte Ferplast",
+             "Viagens e idas ao veterinário com segurança.", "Safe trips and vet visits.", "Viajes y visitas al veterinario con seguridad."),
+    ],
+    "presente-casa": [
+        item("Air fryer Mondial", "Mondial air fryer", "Freidora de aire Mondial",
+             "air fryer Mondial",
+             "Comida crocante com menos óleo, de uma marca presente em todo o Brasil.", "Crispy food with less oil, from a household brand.", "Comida crujiente con menos aceite, de una marca muy conocida."),
+        item("Jogo de panelas Tramontina", "Tramontina cookware set", "Juego de ollas Tramontina",
+             "jogo de panelas Tramontina",
+             "Qualidade brasileira que dura muitos anos.", "Brazilian quality that lasts for years.", "Calidad brasileña que dura muchos años."),
+        item("Cafeteira Nespresso Essenza Mini", "Nespresso Essenza Mini coffee maker", "Cafetera Nespresso Essenza Mini",
+             "Nespresso Essenza Mini",
+             "Café de cafeteria em casa, em segundos.", "Café-quality coffee at home in seconds.", "Café de cafetería en casa, en segundos."),
+    ],
+    "presente-tecnologia": [
+        item("Fire TV Stick", "Fire TV Stick", "Fire TV Stick",
+             "Fire TV Stick",
+             "Transforma qualquer TV em smart TV.", "Turns any TV into a smart TV.", "Convierte cualquier TV en smart TV."),
+        item("Smartwatch Amazfit Bip 5", "Amazfit Bip 5 smartwatch", "Reloj inteligente Amazfit Bip 5",
+             "Amazfit Bip 5",
+             "Notificações, saúde e bateria de vários dias.", "Notifications, health tracking and multi-day battery.", "Notificaciones, salud y batería de varios días."),
+        item("Kindle", "Kindle", "Kindle",
+             "Kindle 11ª geração",
+             "Uma biblioteca inteira na mão, com leitura que descansa os olhos.", "A whole library in hand, easy on the eyes.", "Toda una biblioteca en la mano, con lectura que descansa la vista."),
+    ],
+})
+
+# Páginas que reaproveitam produtos de outras (nenhuma hoje: presentes têm produtos próprios).
+REFERENCIAS: dict[str, list[str]] = {}
 
 
 def link_amazon(busca: str, tag: str) -> str:
