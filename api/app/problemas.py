@@ -47,7 +47,39 @@ def _t(pt: str, en: str, es: str) -> dict[str, str]:
     return {"pt": pt, "en": en, "es": es}
 
 
+_CONSIDERAR_PRESENTE = [
+    _t("Pense no dia a dia de quem vai receber: o melhor presente resolve algo real.",
+       "Think about the person's daily life: the best gift solves something real.",
+       "Piensa en el día a día de quien lo recibe: el mejor regalo resuelve algo real."),
+    _t("Marcas conhecidas facilitam troca e garantia, se precisar.",
+       "Well-known brands make returns and warranty easier.",
+       "Las marcas conocidas facilitan cambios y garantía."),
+    _t("Compre com antecedência: perto do Natal, as entregas demoram mais.",
+       "Buy early: deliveries take longer close to Christmas.",
+       "Compra con tiempo: cerca de Navidad las entregas tardan más."),
+]
+
+
+def _presente(slug: str, pt: str, en: str, es: str, rpt: str, ren: str, res: str) -> dict[str, Any]:
+    return {"slug": slug, "titulo": _t(pt, en, es), "resumo": _t(rpt, ren, res), "considerar": _CONSIDERAR_PRESENTE,
+            "busca": [], "preco": [0, 0]}
+
+
 TEMAS: list[dict[str, Any]] = [
+    # Tema da época: produtos já escolhidos nas outras áreas, reunidos por quem vai ganhar.
+    {"slug": "presentes", "icone": "🎁", "titulo": _t("Presentes de Natal", "Christmas gifts", "Regalos de Navidad"),
+     "problemas": [
+        _presente("presente-musica", "Presente para quem ama música", "A gift for music lovers", "Regalo para quien ama la música",
+                  "Som de marca conhecida para curtir em qualquer lugar.", "Trusted-brand sound to enjoy anywhere.", "Sonido de marca conocida para disfrutar donde sea."),
+        _presente("presente-treino", "Presente para quem treina", "A gift for people who work out", "Regalo para quien entrena",
+                  "Itens que ajudam a treinar e a se recuperar melhor.", "Gear that helps training and recovery.", "Artículos que ayudan a entrenar y recuperarse."),
+        _presente("presente-pet", "Presente para quem tem pet", "A gift for pet owners", "Regalo para quien tiene mascota",
+                  "Mais conforto para o pet e tranquilidade para o dono.", "More comfort for the pet, peace of mind for the owner.", "Más comodidad para la mascota y tranquilidad para el dueño."),
+        _presente("presente-casa", "Presente para a casa", "A gift for the home", "Regalo para el hogar",
+                  "Conforto e praticidade para o dia a dia em casa.", "Comfort and convenience at home.", "Comodidad y practicidad en casa."),
+        _presente("presente-tecnologia", "Presente de tecnologia útil", "A useful tech gift", "Regalo tecnológico útil",
+                  "Tecnologia que a pessoa vai usar todos os dias.", "Tech they'll use every day.", "Tecnología que usará todos los días."),
+     ]},
     {"slug": "esporte", "icone": "🏃", "titulo": _t("Esporte", "Sports", "Deporte"),
      "problemas": [
         {"slug": "treinar-em-casa", "titulo": _t("Treinar em casa sem academia", "Work out at home without a gym", "Entrenar en casa sin gimnasio"),
@@ -170,6 +202,11 @@ TEMAS: list[dict[str, Any]] = [
 
 # Nome curto de cada caso, para os botões de tema ("Treinar em casa · Roupa para treinar")
 CURTOS: dict[str, dict[str, str]] = {
+    "presente-musica": _t("Música", "Music", "Música"),
+    "presente-treino": _t("Quem treina", "Fitness", "Quien entrena"),
+    "presente-pet": _t("Quem tem pet", "Pet owners", "Con mascota"),
+    "presente-casa": _t("Casa", "Home", "Hogar"),
+    "presente-tecnologia": _t("Tecnologia", "Tech", "Tecnología"),
     "treinar-em-casa": _t("Treinar em casa", "Home workouts", "Entrenar en casa"),
     "roupa-de-treino": _t("Roupa para treinar", "Workout clothes", "Ropa para entrenar"),
     "suplementos": _t("Suplementação", "Supplements", "Suplementos"),

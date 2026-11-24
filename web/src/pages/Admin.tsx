@@ -48,7 +48,7 @@ export default function Admin() {
 
   if (!token) return <Login onToken={t => { try { localStorage.setItem(TOKEN_KEY, t); } catch { /* sem armazenamento */ } setToken(t); }} />;
 
-  const tabs: [Tab, string][] = [["geral", "Visão geral"], ["aquisicao", "Aquisição"], ["catalogo", "Catálogo"], ["ofertas", "Ofertas"], ["vendas", "Vendas"], ["leads", "Leads"], ["sistema", "Sistema"]];
+  const tabs: [Tab, string][] = [["geral", "Visão geral"], ["aquisicao", "Aquisição"], ["catalogo", "Catálogo"], ["ofertas", "Ofertas"], ["vendas", "Vendas"], ["leads", "Público"], ["sistema", "Sistema"]];
   return <div className="adm">
     <div className="adm-top"><h1>Operação Robô Global</h1>
       <button className="adm-link" onClick={() => { try { localStorage.removeItem(TOKEN_KEY); } catch { /* sem armazenamento */ } setToken(""); }}>Sair</button></div>
@@ -337,19 +337,45 @@ function Vendas({ run }: { run: Run }) {
 /* ------------------------------------------------------------ leads */
 function Leads({ run, token }: { run: Run; token: string }) {
   const [list] = useData(run, "/admin/leads");
+  const [ins] = useData(run, "/admin/inscricoes");
+  const [fb] = useData(run, "/admin/feedback");
+  async function baixarAchados() {
+    const r = await fetch(API_URL + "/admin/inscricoes?formato=csv", { headers: { Authorization: "Bearer " + token } });
+    if (!r.ok) return;
+    const url = URL.createObjectURL(await r.blob());
+    const a = document.createElement("a"); a.href = url; a.download = "achados-da-semana.csv"; a.click(); URL.revokeObjectURL(url);
+  }
   async function baixar() {
     const r = await fetch(API_URL + "/admin/leads.csv", { headers: { Authorization: "Bearer " + token } });
     if (!r.ok) return;
     const url = URL.createObjectURL(await r.blob());
     const a = document.createElement("a"); a.href = url; a.download = "leads.csv"; a.click(); URL.revokeObjectURL(url);
   }
-  return <Card title="Pessoas que pediram para ser avisadas">
+  return <>
+  <Card title="Inscritos nos achados da semana">
+    <div className="adm-kpis">{[["Total", ins?.total ?? "…"], ["WhatsApp", ins?.por_canal?.whatsapp ?? 0], ["E-mail", ins?.por_canal?.email ?? 0]].map(([k, v]) => <div key={k}><strong>{v}</strong><span>{k}</span></div>)}</div>
+    <button className="adm-btn" onClick={baixarAchados}>Baixar lista (CSV)</button>
+    <p className="adm-muted">Todos aceitaram receber os achados da semana. A lista de WhatsApp pode ser importada no WhatsApp Business (lista de transmissão) e a de e-mail em qualquer ferramenta de envio. Use só para os achados (LGPD).</p>
+    {ins?.data?.length ? <div className="adm-scroll"><table className="adm-table"><thead><tr><th>Data</th><th>Canal</th><th>Contato</th><th>Onde se inscreveu</th><th>Veio de</th></tr></thead><tbody>
+      {ins.data.map((l: Json) => <tr key={l.id}><td>{dt(l.created_at)}</td><td>{l.canal}</td><td>{l.contato}</td><td>{l.origem}</td><td>{l.utm_source || "direto"}</td></tr>)}
+    </tbody></table></div> : <p className="adm-muted">Ainda não há inscritos.</p>}
+  </Card>
+  <Card title="O que o público diz">
+    {fb?.paginas?.length ? <table className="adm-table"><thead><tr><th>Página</th><th>👍 Ajudou</th><th>👎 Não ajudou</th></tr></thead><tbody>
+      {fb.paginas.map((p: Json) => <tr key={p.pagina}><td><a href={`${SITE}/problema/${p.pagina}`} target="_blank" rel="noreferrer">{p.pagina}</a></td><td>{p.ajudou}</td><td>{p.nao_ajudou}</td></tr>)}
+    </tbody></table> : <p className="adm-muted">Ainda não há respostas de "Isso te ajudou?".</p>}
+    <h3>Sugestões e o que faltou</h3>
+    {fb?.sugestoes?.length ? <ul className="adm-frases">{fb.sugestoes.map((x: Json, i: number) => <li key={i}><b>{x.pagina}</b>: {x.texto} <span className="adm-muted">({dt(x.created_at)})</span></li>)}</ul>
+      : <p className="adm-muted">Nenhuma sugestão ainda. Elas viram as próximas páginas do site.</p>}
+  </Card>
+  <Card title="Pessoas que pediram para ser avisadas (versão anterior)">
     <button className="adm-btn" onClick={baixar}>Baixar CSV</button>
     <p className="adm-muted">Todos deram consentimento. Use só para o assunto que pediram (LGPD).</p>
     {list?.data?.length ? <div className="adm-scroll"><table className="adm-table"><thead><tr><th>Data</th><th>E-mail</th><th>Nome</th><th>Idioma</th></tr></thead><tbody>
       {list.data.map((l: Json) => <tr key={l.id}><td>{dt(l.created_at)}</td><td>{l.email}</td><td>{l.name}</td><td>{l.language}</td></tr>)}
     </tbody></table></div> : <p className="adm-muted">Nenhum lead ainda.</p>}
-  </Card>;
+  </Card>
+  </>;
 }
 
 /* ------------------------------------------------------------ sistema */

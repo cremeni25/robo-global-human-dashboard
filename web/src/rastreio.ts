@@ -19,6 +19,13 @@ function canal(): Record<string, string> {
   try { return JSON.parse(sessionStorage.getItem(ARMAZEM) || "{}"); } catch { return {}; }
 }
 
+/** Canal de divulgação por onde a pessoa chegou (ex.: "instagram"), ou "". */
+export function canalAtual(): string { return canal().utm_source || ""; }
+
+/** Último tema visitado: o início mostra "Continuar em…" (fica só neste aparelho). */
+export function lembrarTema(slug: string): void { try { localStorage.setItem("rg_ultimo_tema", slug); } catch { /* sem armazenamento */ } }
+export function ultimoTema(): string { try { return localStorage.getItem("rg_ultimo_tema") || ""; } catch { return ""; } }
+
 /** Link de saída rastreado para a loja parceira. */
 export function linkSaida(url: string, dorId?: string): string {
   const q = new URLSearchParams(canal());

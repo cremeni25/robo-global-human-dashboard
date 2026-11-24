@@ -79,6 +79,40 @@ def fixar_problema(slug: str, payload: FixarIn, db: Session = Depends(get_db), a
     return {"slug": slug, "ofertas": r}
 
 
+@router.get("/inscricoes")
+def inscricoes(formato: str = Query(default="json", pattern="^(json|csv)$"),
+               db: Session = Depends(get_db), _: str = Depends(require_admin)):
+    """Quem pediu os achados da semana. CSV para importar no WhatsApp Business ou no e-mail."""
+    from ..models import Inscricao
+    rows = db.scalars(select(Inscricao).where(Inscricao.ativo.is_(True)).order_by(Inscricao.created_at.desc())).all()
+    if formato == "csv":
+        out = io.StringIO()
+        w = csv.writer(out)
+        w.writerow(["canal", "contato", "idioma", "origem", "canal_divulgacao", "data"])
+        for r in rows:
+            w.writerow([r.canal, r.contato, r.language, r.origem, r.utm_source, r.created_at.isoformat()])
+        return PlainTextResponse(out.getvalue(), media_type="text/csv",
+                                 headers={"Content-Disposition": "attachment; filename=achados-da-semana.csv"})
+    por_canal: dict[str, int] = {}
+    for r in rows:
+        por_canal[r.canal] = por_canal.get(r.canal, 0) + 1
+    return {"total": len(rows), "por_canal": por_canal,
+            "data": [{"id": r.id, "canal": r.canal, "contato": r.contato, "origem": r.origem,
+                      "utm_source": r.utm_source, "created_at": r.created_at.isoformat()} for r in rows[:500]]}
+
+
+@router.get("/feedback")
+def feedback_painel(db: Session = Depends(get_db), _: str = Depends(require_admin)):
+    """O que o público diz: utilidade por página e sugestões de novos problemas."""
+    from ..models import Feedback
+    linhas = db.execute(select(Feedback.pagina, func.count().filter(Feedback.util.is_(True)),
+                               func.count().filter(Feedback.util.is_(False))).group_by(Feedback.pagina)).all()
+    sugestoes = db.scalars(select(Feedback).where(Feedback.sugestao != "").order_by(Feedback.created_at.desc()).limit(200)).all()
+    return {"paginas": sorted([{"pagina": p, "ajudou": a, "nao_ajudou": n} for p, a, n in linhas],
+                              key=lambda x: -(x["ajudou"] + x["nao_ajudou"])),
+            "sugestoes": [{"pagina": f.pagina, "texto": f.sugestao, "created_at": f.created_at.isoformat()} for f in sugestoes]}
+
+
 @router.get("/canais")
 def canais(db: Session = Depends(get_db), _: str = Depends(require_admin)):
     """Resultado por canal de divulgação (utm_source): cliques e vendas, 30 dias e total."""

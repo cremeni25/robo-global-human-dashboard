@@ -195,6 +195,16 @@ CURADORIA: dict[str, list[dict[str, Any]]] = {
 }
 
 
+# Páginas que reúnem produtos já escolhidos acima (mesma oferta, mesmas lojas e motivos).
+REFERENCIAS: dict[str, list[str]] = {
+    "presente-musica": ["som-para-reunir:0", "fone-sem-fio:0", "som-para-reunir:1"],
+    "presente-treino": ["treinar-em-casa:1", "dores-nas-costas:2", "roupa-de-treino:2"],
+    "presente-pet": ["passeio-seguro:2", "pet-sozinho-em-casa:0", "pet-sozinho-em-casa:1"],
+    "presente-casa": ["relaxar-em-casa:1", "dormir-melhor:2", "limpeza-facil:2"],
+    "presente-tecnologia": ["bateria-do-celular:1", "fone-sem-fio:1", "acompanhar-peso:1"],
+}
+
+
 def link_amazon(busca: str, tag: str) -> str:
     return f"https://www.amazon.com.br/s?k={quote_plus(busca)}&tag={quote_plus(tag)}"
 
@@ -264,6 +274,10 @@ def aplicar(db: Session, s: Settings) -> dict[str, int]:
             flag_modified(o, "translations")
             ids.append(o.id)
         fixas[slug] = ids
+    por_chave = {o.external_product_id: o.id for o in db.scalars(select(Oferta).where(Oferta.platform == PLATAFORMA))}
+    por_chave.update({f"{slug}:{n}": i for slug, ids in fixas.items() for n, i in enumerate(ids)})
+    for slug, chaves in REFERENCIAS.items():
+        fixas[slug] = [por_chave[c] for c in chaves if c in por_chave]
     for ext, o in existentes.items():  # saiu da lista: sai do ar
         if ext not in usados:
             o.active = False
