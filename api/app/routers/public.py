@@ -101,6 +101,15 @@ def problemas(request: Request, db: Session = Depends(get_db)):
     return {"status": "OK", "temas": pb.obter(db, request.app.state.settings)["temas"]}
 
 
+@router.get("/public/catalogo")
+def catalogo(request: Request, db: Session = Depends(get_db)):
+    """Todos os temas e todas as páginas de uma vez (poucos KB): o site navega sem esperar."""
+    from .. import problemas as pb
+    data = pb.obter(db, request.app.state.settings)
+    return JSONResponse({"status": "OK", "temas": data["temas"], "detalhes": data["detalhes"]},
+                        headers={"Cache-Control": "public, max-age=300"})
+
+
 @router.get("/public/problemas/{slug}")
 def problema(slug: str, request: Request, db: Session = Depends(get_db)):
     from .. import problemas as pb
@@ -237,12 +246,33 @@ def inscrever(payload: InscricaoIn, db: Session = Depends(get_db)):
     contato = _normalizar_contato(payload.canal, payload.contato)
     if not contato:
         raise HTTPException(status_code=422, detail="Contato invalido")
-    db.add(Inscricao(canal=payload.canal, contato=contato, consent=True, language=payload.language[:10],
-                     origem=payload.origem.strip()[:120], utm_source=payload.utm_source.strip()[:120]))
+    existente = db.scalars(select(Inscricao).where(Inscricao.canal == payload.canal, Inscricao.contato == contato)).first()
+    if existente is not None:  # quem tinha cancelado e voltou: reativa
+        existente.ativo, existente.consent = True, True
+    else:
+        db.add(Inscricao(canal=payload.canal, contato=contato, consent=True, language=payload.language[:10],
+                         origem=payload.origem.strip()[:120], utm_source=payload.utm_source.strip()[:120]))
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
+    return {"status": "OK"}
+
+
+class CancelarIn(BaseModel):
+    contato: str = Field(max_length=254)
+
+
+@router.post("/public/inscricoes/cancelar")
+def cancelar_inscricao(payload: CancelarIn, db: Session = Depends(get_db)):
+    """Sair dos achados da semana. Resposta sempre igual: não revela se o contato estava inscrito."""
+    canal = "email" if "@" in payload.contato else "whatsapp"
+    contato = _normalizar_contato(canal, payload.contato)
+    if not contato:
+        raise HTTPException(status_code=422, detail="Contato invalido")
+    for r in db.scalars(select(Inscricao).where(Inscricao.canal == canal, Inscricao.contato == contato)):
+        r.ativo = False
+    db.commit()
     return {"status": "OK"}
 
 

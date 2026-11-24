@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
-import { carregarProblema } from "../problemas";
+import { carregarProblema, catalogoImediato } from "../problemas";
 import type { Problema as P } from "../problemas";
 import { compartilhar, lembrarTema, linkSaida, tituloOferta } from "../rastreio";
 import Achados from "../components/Achados";
@@ -19,11 +19,11 @@ const locais = { pt: "pt-BR", en: "en-US", es: "es-ES" } as const;
 
 export default function Problema() {
   const { slug = "" } = useParams(); const { lang } = useLanguage(); const t = copy[lang];
-  const [p, setP] = useState<P | null | undefined>(undefined);
+  const [p, setP] = useState<P | null | undefined>(() => catalogoImediato()?.detalhes[slug]);
   const [erro, setErro] = useState(false);
   useEffect(() => {
     const c = new AbortController();
-    setP(undefined); setErro(false);
+    setP(catalogoImediato()?.detalhes[slug]); setErro(false);
     carregarProblema(slug, c.signal).then(setP).catch(() => { if (!c.signal.aborted) setErro(true); });
     return () => c.abort();
   }, [slug]);

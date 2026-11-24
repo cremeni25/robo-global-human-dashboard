@@ -3,20 +3,21 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { API_URL } from "../config";
 import { useLanguage } from "../contexts/LanguageContext";
+import { Link } from "react-router-dom";
 import { canalAtual } from "../rastreio";
 
 const copy = {
   pt: { title: "Receba os achados da semana", lead: "Toda semana, 3 soluções escolhidas a dedo para o dia a dia. Sem spam: você sai quando quiser.",
     whatsapp: "WhatsApp", email: "E-mail", phWa: "Seu WhatsApp com DDD", phEmail: "Seu e-mail",
-    consent: "Aceito receber os achados da semana do Robô Global. Posso cancelar a qualquer momento.",
+    consent: "Aceito receber os achados da semana do Robô Global. Posso cancelar a qualquer momento em", sair: "roboglobal.com.br/cancelar",
     send: "Quero receber", sending: "Enviando…", ok: "Pronto! Você vai receber os próximos achados.", error: "Confira o contato e tente de novo." },
   en: { title: "Get the weekly picks", lead: "Every week, 3 hand-picked solutions for everyday life. No spam: leave whenever you want.",
     whatsapp: "WhatsApp", email: "Email", phWa: "Your WhatsApp number", phEmail: "Your email",
-    consent: "I agree to receive Robô Global's weekly picks. I can unsubscribe at any time.",
+    consent: "I agree to receive Robô Global's weekly picks. I can unsubscribe anytime at", sair: "roboglobal.com.br/cancelar",
     send: "Sign me up", sending: "Sending…", ok: "Done! You'll get the next picks.", error: "Please check your contact and try again." },
   es: { title: "Recibe los hallazgos de la semana", lead: "Cada semana, 3 soluciones elegidas para el día a día. Sin spam: te das de baja cuando quieras.",
     whatsapp: "WhatsApp", email: "Correo", phWa: "Tu WhatsApp con código de área", phEmail: "Tu correo",
-    consent: "Acepto recibir los hallazgos semanales de Robô Global. Puedo cancelar cuando quiera.",
+    consent: "Acepto recibir los hallazgos semanales de Robô Global. Puedo cancelar cuando quiera en", sair: "roboglobal.com.br/cancelar",
     send: "Quiero recibir", sending: "Enviando…", ok: "¡Listo! Recibirás los próximos hallazgos.", error: "Revisa el contacto e inténtalo de nuevo." },
 };
 
@@ -53,7 +54,7 @@ export default function Achados({ origem }: { origem: string }) {
         <button className="rg-retry" type="submit" disabled={estado === "enviando"}>{estado === "enviando" ? t.sending : t.send}</button>
       </div>
       <input type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" className="rg-hp" value={website} onChange={e => setWebsite(e.target.value)} />
-      <label className="rg-achados-consent"><input type="checkbox" required checked={consent} onChange={e => setConsent(e.target.checked)} /> {t.consent}</label>
+      <label className="rg-achados-consent"><input type="checkbox" required checked={consent} onChange={e => setConsent(e.target.checked)} /> <span>{t.consent} <Link to="/cancelar">{t.sair}</Link>.</span></label>
       {estado === "erro" && <p className="rg-achados-erro" role="alert">{t.error}</p>}
     </form>}
   </section>;

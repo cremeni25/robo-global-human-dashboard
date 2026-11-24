@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
-import { carregarTemas } from "../problemas";
+import { carregarTemas, catalogoImediato } from "../problemas";
 import type { Tema } from "../problemas";
 import Achados from "../components/Achados";
 import { ultimoTema } from "../rastreio";
@@ -20,7 +20,7 @@ const copy = {
 
 export default function Home() {
   const { lang } = useLanguage(); const t = copy[lang];
-  const [temas, setTemas] = useState<Tema[] | null>(null);
+  const [temas, setTemas] = useState<Tema[] | null>(() => catalogoImediato()?.temas ?? null);
   const [erro, setErro] = useState(false);
   useEffect(() => {
     const c = new AbortController();
