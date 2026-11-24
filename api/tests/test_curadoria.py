@@ -21,6 +21,7 @@ def test_curadoria_preenche_os_seis_temas_com_links_da_amazon(settings):
     musica = client.get("/public/problemas/presente-musica").json()["data"]
     assert [e["oferta"]["title"] for e in musica["escolhas"]] == [
         "Fone de ouvido JBL Tune 520BT", "Echo Pop com Alexa", "Caixa de som JBL Clip 5"]
+    assert [l["loja"] for l in musica["escolhas"][0]["lojas"]] == ["Amazon", "Mercado Livre"]
     # presentes não repetem nenhum produto das outras páginas
     buscas = [it["busca"].lower() for itens in CURADORIA.values() for it in itens]
     assert len(buscas) == len(set(buscas))
