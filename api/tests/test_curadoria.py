@@ -1,7 +1,7 @@
 """Curadoria: produtos de marcas conhecidas, com o ID de Associado, nas 6 áreas."""
 from fastapi.testclient import TestClient
 
-from app.curadoria import CURADORIA, aplicar
+from app.curadoria import CURADORIA, REFERENCIAS, aplicar
 from app.main import create_app
 from app.problemas import TEMAS
 
@@ -13,10 +13,15 @@ def test_curadoria_preenche_os_seis_temas_com_links_da_amazon(settings):
 
     # todo problema do site tem 3 escolhas na curadoria
     slugs = {p["slug"] for t in TEMAS for p in t["problemas"]}
-    assert slugs == set(CURADORIA) and all(len(v) == 3 for v in CURADORIA.values())
+    assert slugs == set(CURADORIA) | set(REFERENCIAS) and all(len(v) == 3 for v in CURADORIA.values())
+    assert all(c.split(":")[0] in CURADORIA for v in REFERENCIAS.values() for c in v)
 
     temas = client.get("/public/problemas").json()["temas"]
-    assert [t["slug"] for t in temas] == ["esporte", "saude", "bem-estar", "casa", "pet", "eletronicos"]
+    assert [t["slug"] for t in temas] == ["presentes", "esporte", "saude", "bem-estar", "casa", "pet", "eletronicos"]
+    musica = client.get("/public/problemas/presente-musica").json()["data"]
+    assert [e["oferta"]["title"] for e in musica["escolhas"]] == [
+        "Caixa de som JBL Go 4", "Fone sem fio JBL Wave Buds", "Caixa de som JBL Flip 6"]
+    assert [l["loja"] for l in musica["escolhas"][0]["lojas"]] == ["Amazon", "Mercado Livre"]
     pag = client.get("/public/problemas/som-para-reunir").json()["data"]
     titulos = [e["oferta"]["title"] for e in pag["escolhas"]]
     assert titulos == ["Caixa de som JBL Go 4", "Caixa de som JBL Flip 6", "Caixa de som JBL Charge 5"]

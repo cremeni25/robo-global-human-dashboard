@@ -214,6 +214,32 @@ class Lead(Base):
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
 
+class Inscricao(Base):
+    """Pessoa que pediu para receber os achados da semana (WhatsApp ou e-mail), com consentimento LGPD."""
+    __tablename__ = "rg_inscricoes"
+    __table_args__ = (UniqueConstraint("canal", "contato", name="uq_rg_inscricao"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    canal: Mapped[str] = mapped_column(String(20))  # whatsapp|email
+    contato: Mapped[str] = mapped_column(String(254))
+    consent: Mapped[bool] = mapped_column(Boolean, default=False)
+    language: Mapped[str] = mapped_column(String(10), default="pt")
+    origem: Mapped[str] = mapped_column(String(120), default="")  # página onde se inscreveu
+    utm_source: Mapped[str] = mapped_column(String(120), default="")
+    ativo: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class Feedback(Base):
+    """Resposta a "Isso te ajudou?" e sugestões de novos problemas. Sem dado pessoal."""
+    __tablename__ = "rg_feedback"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    pagina: Mapped[str] = mapped_column(String(120), index=True)
+    util: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    sugestao: Mapped[str] = mapped_column(Text, default="")
+    language: Mapped[str] = mapped_column(String(10), default="pt")
+    created_at: Mapped[datetime] = mapped_column(default=utcnow, index=True)
+
+
 class Decisao(Base):
     __tablename__ = "rg_decisoes"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)

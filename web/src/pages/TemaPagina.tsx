@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
 import { carregarTemas } from "../problemas";
 import type { Tema } from "../problemas";
+import Achados from "../components/Achados";
+import { lembrarTema } from "../rastreio";
 
 const copy = {
   pt: { back: "Todos os temas", lead: (x: string) => `O que você quer resolver em ${x}?`, see: (n: number) => `Ver as ${n} opções`, loading: "Carregando…", missing: "Este tema não está disponível no momento.", error: "Não foi possível carregar agora." },
@@ -20,6 +22,7 @@ export default function TemaPagina() {
     return () => c.abort();
   }, []);
   const tema = temas?.find(x => x.slug === slug);
+  useEffect(() => { if (tema) lembrarTema(tema.slug); }, [tema]);
   useEffect(() => { if (tema) document.title = tema.titulo[lang] + " · Robô Global"; return () => { document.title = "Robô Global · Soluções para o dia a dia"; }; }, [tema, lang]);
 
   return <div className="rg-store">
@@ -37,6 +40,7 @@ export default function TemaPagina() {
             <span>{p.resumo[lang]}</span>
             <em>{t.see(p.produtos)} →</em>
           </Link>)}</div>}
+      {tema && <Achados origem={"tema:" + tema.slug} />}
     </div>
   </div>;
 }

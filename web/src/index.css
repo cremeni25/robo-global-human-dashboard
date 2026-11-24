@@ -169,3 +169,32 @@
 .rg-lojas .rg-escolha-go{justify-content:center;margin-top:0;padding:12px 10px}
 .rg-loja-ml{background:#ffe600 !important;color:#2d3277 !important}
 .rg-loja-ml:hover{background:#f2d600 !important}
+/* Achados da semana, "Isso te ajudou?" e "Continuar em" */
+.rg-continuar{margin:18px 0 0}
+.rg-achados{margin:36px 0 8px;background:linear-gradient(120deg,#0a252c,#10454a);color:#eafff8;border-radius:22px;padding:26px 28px}
+.rg-achados h2{font:800 clamp(20px,2vw,26px)/1.25 Manrope,sans-serif;margin:0 0 6px;color:#fff}
+.rg-achados p{margin:0 0 16px;color:#c4dfdd;line-height:1.5}
+.rg-achados-canais{display:inline-flex;gap:6px;background:#ffffff14;border-radius:999px;padding:4px;margin-bottom:12px}
+.rg-achados-canais button{border:0;background:transparent;color:#d7f3ec;font-weight:800;border-radius:999px;padding:7px 16px;cursor:pointer}
+.rg-achados-canais button.on{background:#8de9d0;color:#0a252c}
+.rg-achados-linha{display:flex;gap:10px;flex-wrap:wrap}
+.rg-achados-linha input{flex:1 1 220px;min-height:48px;border-radius:12px;border:0;padding:0 14px;font:500 16px DM Sans,sans-serif}
+.rg-achados-linha .rg-retry{background:#8de9d0;color:#0a252c}
+.rg-achados-linha .rg-retry:hover{background:#b5f3e2}
+.rg-achados-consent{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:13px;color:#c4dfdd;line-height:1.45}
+.rg-achados-ok{font-weight:800;color:#8de9d0 !important;margin:0 !important}
+.rg-achados-erro{color:#ffd1c9 !important;margin:10px 0 0 !important}
+.rg-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.rg-ajudou{margin:30px 0 0;background:#fff;border:1px solid #e1e9e6;border-radius:18px;padding:18px 22px;display:flex;flex-wrap:wrap;align-items:center;gap:14px;color:#1b3237}
+.rg-ajudou strong{font:800 18px Manrope,sans-serif}
+.rg-ajudou-botoes{display:flex;gap:8px}
+.rg-ajudou-botoes button{border:1px solid #b8ccc8;background:#fff;border-radius:999px;padding:8px 16px;font-weight:800;cursor:pointer;color:#123b3e}
+.rg-ajudou-botoes button:hover{background:#e3efec}
+.rg-ajudou form{display:flex;flex-direction:column;gap:8px;width:100%}
+.rg-ajudou textarea{border:1px solid #cfdcd9;border-radius:12px;padding:10px 12px;font:500 15px DM Sans,sans-serif;resize:vertical}
+.rg-ajudou form .rg-retry{align-self:flex-start}
+.rg-ajudou-fim{color:#0b5b54;font-weight:700}
+@media(max-width:520px){.rg-achados{padding:20px 18px}.rg-temas{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.rg-tema-destaque{grid-column:1/-1;background:linear-gradient(110deg,#fff7e0,#ffffff 60%);border-color:#f4d27a}
+.rg-tema-destaque strong{font-size:26px}
+.rg-tema-destaque .rg-tema-icone{font-size:46px}

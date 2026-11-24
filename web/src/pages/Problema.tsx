@@ -3,7 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
 import { carregarProblema } from "../problemas";
 import type { Problema as P } from "../problemas";
-import { compartilhar, linkSaida, tituloOferta } from "../rastreio";
+import { compartilhar, lembrarTema, linkSaida, tituloOferta } from "../rastreio";
+import Achados from "../components/Achados";
+import Ajudou from "../components/Ajudou";
 
 const copy = {
   pt: { consider: "Antes de escolher", picks: "Três boas opções", go: "Ver na loja", share: "Compartilhar", back: "Ver outros problemas", voltar: "Voltar para",
@@ -25,6 +27,7 @@ export default function Problema() {
     carregarProblema(slug, c.signal).then(setP).catch(() => { if (!c.signal.aborted) setErro(true); });
     return () => c.abort();
   }, [slug]);
+  useEffect(() => { if (p) lembrarTema(p.tema); }, [p]);
   useEffect(() => { if (p) document.title = p.titulo[lang] + " · Robô Global"; return () => { document.title = "Robô Global · Soluções para o dia a dia"; }; }, [p, lang]);
 
   if (erro || p === null || p === undefined) return <div className="rg-store"><div className="rg-store-inner rg-store-body">
@@ -65,6 +68,8 @@ export default function Problema() {
           </article>;
         })}</div>
       </section>
+      <Ajudou pagina={p.slug} />
+      <Achados origem={"problema:" + p.slug} />
       <p><Link className="rg-shelf-all" to={"/tema/" + p.tema}>← {t.voltar} {p.tema_titulo[lang]}</Link></p>
     </div>
   </div>;

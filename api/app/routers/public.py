@@ -6,7 +6,7 @@ from __future__ import annotations
 import hashlib
 import re
 import uuid
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -21,7 +21,7 @@ from ..core import (
     sistema, subnicho_visivel,
 )
 from ..db import get_db
-from ..models import Alias, Clique, Dor, DorOferta, Lead, Nicho, Oferta, Subnicho
+from ..models import Alias, Clique, Dor, DorOferta, Feedback, Inscricao, Lead, Nicho, Oferta, Subnicho
 
 router = APIRouter()
 
@@ -203,6 +203,68 @@ class LeadIn(BaseModel):
     consent: bool = False
     language: str = Field(default="pt", max_length=10)
     website: str = ""  # armadilha anti-robô: humanos não preenchem
+
+
+class InscricaoIn(BaseModel):
+    canal: Literal["whatsapp", "email"]
+    contato: str = Field(max_length=254)
+    consent: bool = False
+    language: str = Field(default="pt", max_length=10)
+    origem: str = Field(default="", max_length=120)
+    utm_source: str = Field(default="", max_length=120)
+    website: str = ""  # armadilha anti-robô
+
+
+def _normalizar_contato(canal: str, contato: str) -> Optional[str]:
+    if canal == "email":
+        e = contato.strip().lower()
+        return e if EMAIL_RE.match(e) else None
+    d = re.sub(r"\D", "", contato)
+    if d.startswith("00"):
+        d = d[2:]
+    if len(d) in (10, 11):  # número brasileiro sem DDI
+        d = "55" + d
+    return "+" + d if 12 <= len(d) <= 15 else None
+
+
+@router.post("/public/inscricoes", status_code=201)
+def inscrever(payload: InscricaoIn, db: Session = Depends(get_db)):
+    """Inscrição nos "achados da semana". Resposta idêntica para quem já estava inscrito."""
+    if payload.website:
+        return {"status": "OK"}
+    if not payload.consent:
+        raise HTTPException(status_code=422, detail="Consentimento obrigatorio")
+    contato = _normalizar_contato(payload.canal, payload.contato)
+    if not contato:
+        raise HTTPException(status_code=422, detail="Contato invalido")
+    db.add(Inscricao(canal=payload.canal, contato=contato, consent=True, language=payload.language[:10],
+                     origem=payload.origem.strip()[:120], utm_source=payload.utm_source.strip()[:120]))
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+    return {"status": "OK"}
+
+
+class FeedbackIn(BaseModel):
+    pagina: str = Field(max_length=120)
+    util: Optional[bool] = None
+    sugestao: str = Field(default="", max_length=500)
+    language: str = Field(default="pt", max_length=10)
+    website: str = ""
+
+
+@router.post("/public/feedback", status_code=201)
+def feedback(payload: FeedbackIn, db: Session = Depends(get_db)):
+    """"Isso te ajudou?" e "Qual problema você quer que a gente resolva?"."""
+    if payload.website:
+        return {"status": "OK"}
+    if payload.util is None and not payload.sugestao.strip():
+        raise HTTPException(status_code=422, detail="Resposta vazia")
+    db.add(Feedback(pagina=payload.pagina.strip()[:120], util=payload.util,
+                    sugestao=payload.sugestao.strip()[:500], language=payload.language[:10]))
+    db.commit()
+    return {"status": "OK"}
 
 
 @router.post("/public/leads", status_code=201)
