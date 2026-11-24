@@ -20,8 +20,10 @@ def test_curadoria_preenche_os_seis_temas_com_links_da_amazon(settings):
     assert [t["slug"] for t in temas] == ["presentes", "esporte", "saude", "bem-estar", "casa", "pet", "eletronicos"]
     musica = client.get("/public/problemas/presente-musica").json()["data"]
     assert [e["oferta"]["title"] for e in musica["escolhas"]] == [
-        "Caixa de som JBL Go 4", "Fone sem fio JBL Wave Buds", "Caixa de som JBL Flip 6"]
-    assert [l["loja"] for l in musica["escolhas"][0]["lojas"]] == ["Amazon", "Mercado Livre"]
+        "Fone de ouvido JBL Tune 520BT", "Echo Pop com Alexa", "Caixa de som JBL Clip 5"]
+    # presentes não repetem nenhum produto das outras páginas
+    buscas = [it["busca"].lower() for itens in CURADORIA.values() for it in itens]
+    assert len(buscas) == len(set(buscas))
     pag = client.get("/public/problemas/som-para-reunir").json()["data"]
     titulos = [e["oferta"]["title"] for e in pag["escolhas"]]
     assert titulos == ["Caixa de som JBL Go 4", "Caixa de som JBL Flip 6", "Caixa de som JBL Charge 5"]
@@ -47,4 +49,5 @@ def test_curadoria_preenche_os_seis_temas_com_links_da_amazon(settings):
     from app.models import Oferta
     with client.app.state.sessionmaker() as db:
         assert db.query(Oferta).filter(Oferta.platform == "amazon").count() == 3 * len(CURADORIA)
-        assert db.query(Oferta).filter(Oferta.platform == "mercadolivre").count() == 3 * len(CURADORIA)
+        from app.curadoria_ml import LINKS_ML
+        assert db.query(Oferta).filter(Oferta.platform == "mercadolivre").count() == len(LINKS_ML)
