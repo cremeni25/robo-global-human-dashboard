@@ -321,17 +321,66 @@ def montar(db: Session, s: Settings) -> dict[str, Any]:
     return {"temas": temas, "detalhes": detalhes}
 
 
-def obter(db: Session, s: Settings, ttl: float = 600) -> dict[str, Any]:
+def obter(db: Session, s: Settings, ttl: float = 1800) -> dict[str, Any]:
+    """Páginas prontas na memória. Se estiverem velhas, quem pede recebe a versão pronta na hora
+    e a atualização acontece em segundo plano: o visitante nunca espera a montagem."""
     with _lock:
-        if _cache["data"] is not None and time.time() - _cache["ts"] < ttl:
-            return _cache["data"]
+        data, idade = _cache["data"], time.time() - _cache["ts"]
+    if data is not None:
+        if idade >= ttl:
+            _atualizar_em_segundo_plano(s)
+        return data
     data = montar(db, s)
     with _lock:
         _cache.update(ts=time.time(), data=data)
     return data
 
 
+_sessionmaker = None
+_atualizando = threading.Event()
+
+
+def reiniciar() -> None:
+    """Nova aplicação: esquece o banco e as páginas da anterior."""
+    global _sessionmaker
+    _sessionmaker = None
+    with _lock:
+        _cache.update(ts=0.0, data=None)
+
+
+def configurar(sessionmaker, s: Settings) -> None:
+    """Chamado na inicialização: guarda como abrir sessões e já deixa as páginas prontas."""
+    global _sessionmaker
+    _sessionmaker = sessionmaker
+    _atualizar_em_segundo_plano(s)
+
+
+def _atualizar_em_segundo_plano(s: Settings) -> None:
+    if _sessionmaker is None or _atualizando.is_set():
+        return
+    _atualizando.set()
+
+    def tarefa():
+        try:
+            with _sessionmaker() as db:
+                data = montar(db, s)
+            with _lock:
+                _cache.update(ts=time.time(), data=data)
+        except Exception:
+            pass
+        finally:
+            _atualizando.clear()
+
+    threading.Thread(target=tarefa, daemon=True).start()
+
+
 def limpar_cache() -> None:
+    """Após mudança de produtos: com sessão configurada, remonta em segundo plano mantendo a versão
+    atual no ar; sem ela (testes), descarta para a próxima leitura montar de novo."""
+    if _sessionmaker is not None:
+        with _lock:
+            _cache["ts"] = 0.0
+        return
     with _lock:
         _cache.update(ts=0.0, data=None)
 

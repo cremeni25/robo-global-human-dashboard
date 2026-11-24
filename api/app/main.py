@@ -40,6 +40,8 @@ def create_app(settings: Optional[Settings] = None, start_scheduler: bool = True
     app.include_router(admin.router)
 
     log = logging.getLogger("robo_global")
+    from . import problemas as _pb
+    _pb.reiniciar()  # cada aplicação começa com as páginas montadas do seu próprio banco
     try:  # produtos escolhidos a dedo para as páginas de problema
         from .curadoria import aplicar
         with app.state.sessionmaker() as db:
@@ -53,6 +55,8 @@ def create_app(settings: Optional[Settings] = None, start_scheduler: bool = True
     from .aquisicao import iniciar_agendador
     if start_scheduler:
         iniciar_agendador(app.state.sessionmaker, settings)
+        from . import problemas
+        problemas.configurar(app.state.sessionmaker, settings)  # páginas prontas antes do 1º visitante
 
     log.info("Robo Global %s | admin=%s | hotmart=%s | webhook=%s", VERSION,
              "configurado" if settings.admin_tokens else "FECHADO",

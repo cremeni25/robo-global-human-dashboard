@@ -174,7 +174,9 @@ def executar_ciclo(SessionLocal: sessionmaker, s: Settings, actor: str = "agenda
     try:
         with SessionLocal() as db:
             # 1. feeds
-            if s.awin_feed_urls:
+            if not s.importar_catalogos:
+                etapas["catalogos"] = {"status": "desligado", "motivo": "site publico usa a curadoria (IMPORTAR_CATALOGOS=0)"}
+            elif s.awin_feed_urls:
                 totais: dict[str, int] = {}
                 erros = 0
                 for url in s.awin_feed_urls:
@@ -191,15 +193,16 @@ def executar_ciclo(SessionLocal: sessionmaker, s: Settings, actor: str = "agenda
             else:
                 etapas["feeds"] = {"status": "nao_configurado", "falta": "AWIN_FEED_URL"}
             # 1b. fontes universais: qualquer rede, loja ou fornecedor com feed
-            fontes = todas_as_fontes(db, s)
+            fontes = todas_as_fontes(db, s) if s.importar_catalogos else []
             # 1a. Admitad: lojas aprovadas e seus feeds, descobertos pela API (sem link manual)
             cliente_admitad = None
             if s.admitad_base64 and s.admitad_client_id:
                 try:
                     cliente_admitad = admitad.AdmitadClient(s.admitad_base64, s.admitad_client_id, fetch)
-                    extras, info = descobrir_fontes_admitad(cliente_admitad, fontes, s.admitad_website_id)
-                    fontes = fontes + extras
-                    etapas["admitad_lojas"] = info
+                    if s.importar_catalogos:
+                        extras, info = descobrir_fontes_admitad(cliente_admitad, fontes, s.admitad_website_id)
+                        fontes = fontes + extras
+                        etapas["admitad_lojas"] = info
                 except Exception as exc:
                     etapas["admitad_lojas"] = {"status": "falhou", "erro": type(exc).__name__,
                                                "http": getattr(exc, "code", None)}

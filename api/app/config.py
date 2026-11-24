@@ -100,6 +100,10 @@ class Settings:
     admitad_website_id: str = field(default_factory=lambda: os.getenv("ADMITAD_WEBSITE_ID", "").strip())
     # Teto de produtos por loja a cada ciclo (protege o banco: o AliExpress tem milhões).
     feed_max_produtos: int = field(default_factory=lambda: _int("FEED_MAX_PRODUTOS", 20000))
+    # Importar catálogos inteiros das redes (Admitad/Awin) a cada ciclo. Desligado: o site público
+    # usa só a curadoria (marcas conhecidas), e a importação de dezenas de milhares de produtos
+    # deixava o banco lento. A sincronização de vendas continua.
+    importar_catalogos: bool = field(default_factory=lambda: os.getenv("IMPORTAR_CATALOGOS", "0") == "1")
     aquisicao_automatica: bool = field(default_factory=lambda: os.getenv("AQUISICAO_AUTOMATICA", "1") == "1")
     aquisicao_intervalo_horas: float = field(default_factory=lambda: _float("AQUISICAO_INTERVALO_HORAS", 6))
     # Importa uma vez os dados do catálogo legado e do Core V1 (mesmo banco Supabase)

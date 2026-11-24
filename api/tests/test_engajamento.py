@@ -26,3 +26,25 @@ def test_feedback_ajudou_e_sugestao(client, admin):
     som = next(p for p in r["paginas"] if p["pagina"] == "som-para-reunir")
     assert som == {"pagina": "som-para-reunir", "ajudou": 1, "nao_ajudou": 1}
     assert {s["texto"] for s in r["sugestoes"]} == {"Faltou caixa com microfone", "Presente para avó"}
+
+
+def test_cancelar_e_voltar_aos_achados(client, admin):
+    client.post("/public/inscricoes", json={"canal": "whatsapp", "contato": "21 98888-7777", "consent": True})
+    client.post("/public/inscricoes", json={"canal": "email", "contato": "bia@exemplo.com", "consent": True})
+    assert client.post("/public/inscricoes/cancelar", json={"contato": "(21) 98888-7777"}).json() == {"status": "OK"}
+    assert client.post("/public/inscricoes/cancelar", json={"contato": "ninguem@exemplo.com"}).json() == {"status": "OK"}
+    assert {x["contato"] for x in admin.get("/admin/inscricoes").json()["data"]} == {"bia@exemplo.com"}
+    client.post("/public/inscricoes", json={"canal": "whatsapp", "contato": "21988887777", "consent": True})
+    assert admin.get("/admin/inscricoes").json()["total"] == 2
+
+
+def test_catalogo_inteiro_de_uma_vez(settings):
+    from fastapi.testclient import TestClient
+    from app.main import create_app
+    settings.amazon_tag = "roboglobal-20"
+    c = TestClient(create_app(settings, start_scheduler=False))
+    r = c.get("/public/catalogo")
+    d = r.json()
+    assert r.headers["cache-control"].startswith("public")
+    assert len(d["temas"]) == 7 and set(d["detalhes"]) >= {"presente-pet", "fone-sem-fio"}
+    assert len(d["detalhes"]["presente-pet"]["escolhas"]) == 3

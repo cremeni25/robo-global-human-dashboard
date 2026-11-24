@@ -198,3 +198,6 @@
 .rg-tema-destaque{grid-column:1/-1;background:linear-gradient(110deg,#fff7e0,#ffffff 60%);border-color:#f4d27a}
 .rg-tema-destaque strong{font-size:26px}
 .rg-tema-destaque .rg-tema-icone{font-size:46px}
+.rg-achados-consent a{color:#8de9d0;text-decoration:underline}
+.rg-cancelar{display:flex;gap:10px;flex-wrap:wrap;max-width:640px}
+.rg-cancelar input{flex:1 1 260px;min-height:48px;border-radius:12px;border:1px solid #cfdcd9;padding:0 14px;font:500 16px DM Sans,sans-serif}
