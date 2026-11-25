@@ -13,7 +13,7 @@ type Catalogo = { temas: Tema[]; detalhes: Record<string, Problema> };
 // O catálogo inteiro (poucos KB) é carregado uma vez e guardado no aparelho:
 // as telas seguintes abrem na hora, e quem volta ao site vê tudo sem esperar.
 // Em segundo plano, uma versão nova é buscada e substitui a guardada.
-const ARMAZEM = "rg_catalogo_v1";
+const ARMAZEM = "rg_catalogo_v2"; // v2: foco em natação e triathlon
 let memoria: Catalogo | null = lerGuardado();
 let pedido: Promise<Catalogo> | null = null;
 

@@ -23,7 +23,7 @@ export default function TemaPagina() {
   }, []);
   const tema = temas?.find(x => x.slug === slug);
   useEffect(() => { if (tema) lembrarTema(tema.slug); }, [tema]);
-  useEffect(() => { if (tema) document.title = tema.titulo[lang] + " · Robô Global"; return () => { document.title = "Robô Global · Soluções para o dia a dia"; }; }, [tema, lang]);
+  useEffect(() => { if (tema) document.title = tema.titulo[lang] + " · Robô Global"; return () => { document.title = "Robô Global · Natação e triathlon"; }; }, [tema, lang]);
 
   return <div className="rg-store">
     <section className="rg-store-hero"><div className="rg-store-inner">

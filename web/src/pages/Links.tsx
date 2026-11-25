@@ -6,9 +6,9 @@ import { carregarTemas } from "../problemas";
 import type { Tema } from "../problemas";
 
 const copy = {
-  pt: { title: "Robô Global", lead: "O que você quer resolver hoje?", all: "Ver todos os temas" },
-  en: { title: "Robô Global", lead: "What do you want to solve today?", all: "See all topics" },
-  es: { title: "Robô Global", lead: "¿Qué quieres resolver hoy?", all: "Ver todos los temas" },
+  pt: { title: "Robô Global", lead: "Natação e triathlon: o que você quer resolver no seu treino hoje?", all: "Ver todos os temas" },
+  en: { title: "Robô Global", lead: "Swimming and triathlon: what do you want to solve in your training today?", all: "See all topics" },
+  es: { title: "Robô Global", lead: "Natación y triatlón: ¿qué quieres resolver hoy en tu entrenamiento?", all: "Ver todos los temas" },
 };
 
 export default function Links() {

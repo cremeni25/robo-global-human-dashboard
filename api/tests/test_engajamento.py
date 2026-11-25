@@ -46,5 +46,5 @@ def test_catalogo_inteiro_de_uma_vez(settings):
     r = c.get("/public/catalogo")
     d = r.json()
     assert r.headers["cache-control"].startswith("public")
-    assert len(d["temas"]) == 7 and set(d["detalhes"]) >= {"presente-pet", "fone-sem-fio"}
-    assert len(d["detalhes"]["presente-pet"]["escolhas"]) == 3
+    assert len(d["temas"]) == 5 and set(d["detalhes"]) >= {"oculos-natacao", "aguas-abertas"}
+    assert len(d["detalhes"]["aguas-abertas"]["escolhas"]) == 3

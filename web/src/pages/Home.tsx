@@ -7,14 +7,14 @@ import Achados from "../components/Achados";
 import { ultimoTema } from "../rastreio";
 
 const copy = {
-  pt: { title: "O que você quer resolver hoje?",
-    lead: "Escolha um tema e encontre o seu caso. Para cada um, explicamos o que considerar e indicamos três boas opções.",
+  pt: { title: "O que você quer resolver no seu treino hoje?",
+    lead: "Natação e triathlon. Escolha um tema e encontre o seu caso: explicamos o que considerar e indicamos três boas opções de marcas conhecidas.",
     loading: "Carregando…", error: "Não foi possível carregar agora. Tente de novo em instantes.", continuar: "Continuar em" },
-  en: { title: "What do you want to solve today?",
-    lead: "Pick a topic and find your case. For each one, we explain what to consider and suggest three good options.",
+  en: { title: "What do you want to solve in your training today?",
+    lead: "Swimming and triathlon. Pick a topic and find your case: we explain what to consider and suggest three good options from trusted brands.",
     loading: "Loading…", error: "We couldn't load this right now. Please try again shortly.", continuar: "Continue with" },
-  es: { title: "¿Qué quieres resolver hoy?",
-    lead: "Elige un tema y encuentra tu caso. Para cada uno, te explicamos qué tener en cuenta y te sugerimos tres buenas opciones.",
+  es: { title: "¿Qué quieres resolver hoy en tu entrenamiento?",
+    lead: "Natación y triatlón. Elige un tema y encuentra tu caso: te explicamos qué tener en cuenta y te sugerimos tres buenas opciones de marcas conocidas.",
     loading: "Cargando…", error: "No pudimos cargar ahora. Inténtalo de nuevo en unos instantes.", continuar: "Continuar en" },
 };
 

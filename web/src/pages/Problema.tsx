@@ -28,7 +28,7 @@ export default function Problema() {
     return () => c.abort();
   }, [slug]);
   useEffect(() => { if (p) lembrarTema(p.tema); }, [p]);
-  useEffect(() => { if (p) document.title = p.titulo[lang] + " · Robô Global"; return () => { document.title = "Robô Global · Soluções para o dia a dia"; }; }, [p, lang]);
+  useEffect(() => { if (p) document.title = p.titulo[lang] + " · Robô Global"; return () => { document.title = "Robô Global · Natação e triathlon"; }; }, [p, lang]);
 
   if (erro || p === null || p === undefined) return <div className="rg-store"><div className="rg-store-inner rg-store-body">
     <p role="status">{erro ? t.error : p === null ? t.missing : t.loading}</p>

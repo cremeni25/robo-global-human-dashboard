@@ -18,17 +18,17 @@ def test_vitrine_titulos_e_canais(motor):  # noqa: F811
     assert all(o["url"].startswith("/r/") and o["image_url"] for o in v["secoes"][0]["itens"])
     assert [o["title"] for o in v["achados"]] == ["Cheap Phone Case"]  # só o que custa até R$ 50
 
-    # Página de problema: earbuds caem em "Ouvir música e falar sem fio", com 3 escolhas
+    # Página de problema: produtos escolhidos no painel (curadoria) vão ao ar com 3 escolhas
     from app import problemas
-    assert client.get("/public/problemas").json()["temas"] == []  # padrão: só curadoria
-    s.problemas_automatico = True
-    problemas.limpar_cache()
+    assert client.get("/public/problemas").json()["temas"] == []  # sem curadoria, nada no ar
+    ids3 = [o["id"] for o in client.get("/public/ofertas", params={"q": "Earbuds"}).json()["data"]][:3]
+    assert client.put("/admin/problemas/medir-treinos", json={"ofertas": ids3}).json()["ofertas"] == ids3
     temas = client.get("/public/problemas").json()["temas"]
-    assert [t["slug"] for t in temas] == ["eletronicos"]  # temas sem produto bom ficam fora
-    pag = client.get("/public/problemas/fone-sem-fio").json()["data"]
+    assert [t["slug"] for t in temas] == ["treino"]  # temas sem produto ficam fora
+    pag = client.get("/public/problemas/medir-treinos").json()["data"]
     assert [e["nivel"]["chave"] for e in pag["escolhas"]] == ["comecar", "equilibrio", "completa"]
-    assert len(pag["considerar"]) == 3 and pag["tema_titulo"]["pt"] == "Eletrônicos"
-    assert client.get("/public/problemas/pet-sozinho-em-casa").status_code == 404
+    assert len(pag["considerar"]) == 3 and pag["tema_titulo"]["pt"] == "Treino e recuperação"
+    assert client.get("/public/problemas/ansiedade-prova").status_code == 404
 
     chamadas = []
     def fake_ia(sistema, conteudo):
@@ -39,21 +39,21 @@ def test_vitrine_titulos_e_canais(motor):  # noqa: F811
     with client.app.state.sessionmaker() as db:
         r = traduzir_vitrine(db, s, fake_ia)
     assert r["titulos_traduzidos"] == 3 and len(chamadas) == 1
-    item = client.get("/public/problemas/fone-sem-fio").json()["data"]["escolhas"][0]["oferta"]
+    item = client.get("/public/problemas/medir-treinos").json()["data"]["escolhas"][0]["oferta"]
     assert item["translations"]["pt"]["title"].startswith("Fone sem fio")
     with client.app.state.sessionmaker() as db:  # já traduzidos: não paga de novo
         assert traduzir_vitrine(db, s, fake_ia)["titulos_traduzidos"] == 0 and len(chamadas) == 1
 
     # Painel: fixar produtos à mão numa página (ex.: link da Amazon cadastrado em Ofertas)
     ids = [e["oferta"]["id"] for e in pag["escolhas"]][::-1][:2]
-    assert client.put("/admin/problemas/fone-sem-fio", json={"ofertas": ids}).json()["ofertas"] == ids
-    pag2 = client.get("/public/problemas/fone-sem-fio").json()["data"]
+    assert client.put("/admin/problemas/medir-treinos", json={"ofertas": ids}).json()["ofertas"] == ids
+    pag2 = client.get("/public/problemas/medir-treinos").json()["data"]
     assert [e["oferta"]["id"] for e in pag2["escolhas"]] == ids
     painel = {p["slug"]: p for p in client.get("/admin/problemas").json()["data"]}
-    assert painel["fone-sem-fio"]["no_ar"] and not painel["dormir-melhor"]["no_ar"]
+    assert painel["medir-treinos"]["no_ar"] and not painel["oculos-natacao"]["no_ar"]
 
     # Loja fora da lista de confiáveis não aparece ao público (escolha fixada à mão é respeitada)
-    client.put("/admin/problemas/fone-sem-fio", json={"ofertas": []})
+    client.put("/admin/problemas/medir-treinos", json={"ofertas": []})
     s.lojas_confiaveis = []
     problemas.limpar_cache()
     vitrine.limpar_cache()
