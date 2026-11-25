@@ -32,30 +32,121 @@ def item(pt: str, en: str, es: str, busca: str, mpt: str, men: str, mes: str) ->
 
 
 CURADORIA: dict[str, list[dict[str, Any]]] = {
-    # ---------------------------------------------------------------- Esporte
-    "treinar-em-casa": [
+    # ---------------------------------------------------------------- Natação
+    "oculos-natacao": [
+        item("Óculos de natação Hammerhead Vortex", "Hammerhead Vortex goggles", "Gafas Hammerhead Vortex",
+             "óculos de natação Hammerhead Vortex",
+             "Marca brasileira de natação, boa vedação para o dia a dia.", "Brazilian swim brand with a reliable seal for daily use.", "Marca brasileña de natación, buen sellado para el día a día."),
+        item("Óculos Speedo Vanquisher 2.0", "Speedo Vanquisher 2.0 goggles", "Gafas Speedo Vanquisher 2.0",
+             "óculos Speedo Vanquisher 2.0",
+             "Clássico de treino e prova, com encaixe baixo e visão ampla.", "A training and racing classic with low profile and wide view.", "Clásico de entreno y competición, perfil bajo y visión amplia."),
+        item("Óculos Arena Cobra Ultra Swipe", "Arena Cobra Ultra Swipe goggles", "Gafas Arena Cobra Ultra Swipe",
+             "óculos Arena Cobra Ultra Swipe",
+             "Óculos de competição com antiembaçante que se renova ao passar o dedo por fora.", "Racing goggles whose anti-fog renews with a swipe outside.", "Gafas de competición con antiempañante que se renueva al pasar el dedo."),
+    ],
+    "natacao-basico": [
+        item("Touca de silicone Speedo", "Speedo silicone cap", "Gorro de silicona Speedo",
+             "touca de silicone Speedo",
+             "Protege o cabelo e dura muito mais que a de tecido.", "Protects hair and lasts far longer than fabric caps.", "Protege el cabello y dura mucho más que el de tela."),
+        item("Toalha de microfibra Speedo", "Speedo microfiber towel", "Toalla de microfibra Speedo",
+             "toalha de microfibra Speedo",
+             "Seca rápido e ocupa pouco espaço na mochila.", "Dries fast and packs small.", "Seca rápido y ocupa poco espacio."),
+        item("Mochila de natação Arena Fastpack", "Arena Fastpack swim backpack", "Mochila de natación Arena Fastpack",
+             "mochila de natação Arena Fastpack",
+             "Compartimento separado para o material molhado.", "Separate compartment for wet gear.", "Compartimento separado para el material mojado."),
+    ],
+    "tecnica-natacao": [
+        item("Prancha de natação Hammerhead", "Hammerhead kickboard", "Tabla de natación Hammerhead",
+             "prancha de natação Hammerhead",
+             "Base para treinar a pernada, de marca brasileira.", "The basic tool for kick sets, from a Brazilian brand.", "Lo básico para entrenar la patada, marca brasileña."),
+        item("Pull buoy Speedo", "Speedo pull buoy", "Pull buoy Speedo",
+             "pull buoy Speedo",
+             "Isola as pernas para focar na braçada e na rotação.", "Isolates the legs to focus on the pull and rotation.", "Aísla las piernas para enfocarte en la brazada."),
+        item("Nadadeira curta Arena Powerfin Pro", "Arena Powerfin Pro short fins", "Aletas cortas Arena Powerfin Pro",
+             "nadadeira Arena Powerfin Pro",
+             "Fortalece a pernada sem mudar o ritmo do nado.", "Builds kick strength without changing your tempo.", "Fortalece la patada sin cambiar el ritmo."),
+    ],
+    "roupa-competicao": [
+        item("Linha de treino Speedo Endurance (sunga e maiô)", "Speedo Endurance training swimwear", "Línea de entreno Speedo Endurance",
+             "Speedo Endurance sunga maiô",
+             "Tecido resistente ao cloro, feito para durar muitos treinos.", "Chlorine-resistant fabric built for many sessions.", "Tejido resistente al cloro, hecho para durar."),
+        item("Traje Arena Powerskin ST Next", "Arena Powerskin ST Next race suit", "Traje Arena Powerskin ST Next",
+             "Arena Powerskin ST Next",
+             "Primeiro traje tecnológico para competir, com bom custo.", "A first tech suit for racing at a fair price.", "Primer traje técnico para competir, a buen precio."),
+        item("Traje Speedo Fastskin LZR Pure Intent", "Speedo Fastskin LZR Pure Intent", "Traje Speedo Fastskin LZR Pure Intent",
+             "Speedo Fastskin LZR Pure Intent",
+             "Traje de alta performance, usado em competições de elite.", "A high-performance suit used at elite meets.", "Traje de alto rendimiento usado en competiciones de élite."),
+    ],
+    # ---------------------------------------------------------------- Triathlon
+    "aguas-abertas": [
+        item("Boia de segurança Zone3", "Zone3 safety buoy", "Boya de seguridad Zone3",
+             "boia de segurança natação Zone3",
+             "Deixa você visível e dá apoio para descansar.", "Keeps you visible and gives you something to rest on.", "Te hace visible y te da apoyo para descansar."),
+        item("Óculos Aqua Sphere Vista", "Aqua Sphere Vista goggles", "Gafas Aqua Sphere Vista",
+             "óculos Aqua Sphere Vista",
+             "Visão ampla para se orientar pelas boias no mar.", "Wide view to sight buoys at sea.", "Visión amplia para orientarte por las boyas."),
+        item("Roupa de neoprene Orca", "Orca wetsuit", "Neopreno Orca",
+             "roupa de neoprene triathlon Orca",
+             "Aquece, ajuda a flutuar e é referência no triathlon.", "Warms you, adds buoyancy and is a triathlon reference.", "Abriga, ayuda a flotar y es referencia en triatlón."),
+    ],
+    "primeiro-triathlon": [
+        item("Cadarço elástico Lock Laces", "Lock Laces elastic laces", "Cordones elásticos Lock Laces",
+             "cadarço elástico Lock Laces",
+             "Calçar o tênis em segundos na transição.", "Shoes on in seconds in transition.", "Zapatillas puestas en segundos en la transición."),
+        item("Capacete de ciclismo Giro", "Giro cycling helmet", "Casco de ciclismo Giro",
+             "capacete de ciclismo Giro",
+             "Item obrigatório, de marca referência em segurança.", "Mandatory gear from a safety-leading brand.", "Obligatorio, de una marca referente en seguridad."),
+        item("Macaquinho de triathlon Mormaii", "Mormaii tri suit", "Traje de triatlón Mormaii",
+             "macaquinho de triathlon Mormaii",
+             "Uma peça só para nadar, pedalar e correr.", "One piece to swim, bike and run.", "Una sola prenda para nadar, pedalear y correr."),
+    ],
+    "corrida-triathlon": [
+        item("Tênis de corrida Olympikus Corre", "Olympikus Corre running shoes", "Zapatillas Olympikus Corre",
+             "tênis Olympikus Corre",
+             "Tênis nacional leve, ótimo custo para treinar.", "Light Brazilian shoe with great value for training.", "Zapatilla brasileña ligera, gran valor para entrenar."),
+        item("Tênis Mizuno Wave Rider", "Mizuno Wave Rider shoes", "Zapatillas Mizuno Wave Rider",
+             "tênis Mizuno Wave Rider",
+             "Equilíbrio entre amortecimento e resposta para o dia a dia.", "Balanced cushioning and response for everyday runs.", "Equilibrio entre amortiguación y respuesta."),
+        item("Tênis Asics Gel-Nimbus", "Asics Gel-Nimbus shoes", "Zapatillas Asics Gel-Nimbus",
+             "tênis Asics Gel Nimbus",
+             "Amortecimento máximo para poupar as pernas depois do ciclismo.", "Maximum cushioning to spare your legs after the bike.", "Máxima amortiguación para cuidar las piernas tras la bici."),
+    ],
+    # ---------------------------------------------------------------- Treino e recuperação
+    "medir-treinos": [
+        item("Pulseira Xiaomi Smart Band 9", "Xiaomi Smart Band 9", "Pulsera Xiaomi Smart Band 9",
+             "Xiaomi Smart Band 9",
+             "Conta voltas na piscina e cabe em qualquer orçamento.", "Counts pool laps and fits any budget.", "Cuenta largos en la piscina y cabe en cualquier presupuesto."),
+        item("Relógio Garmin Swim 2", "Garmin Swim 2 watch", "Reloj Garmin Swim 2",
+             "Garmin Swim 2",
+             "Feito para natação: piscina e águas abertas, com dados detalhados.", "Built for swimming: pool and open water, detailed data.", "Hecho para nadar: piscina y aguas abiertas, datos detallados."),
+        item("Relógio Garmin Forerunner 55", "Garmin Forerunner 55 watch", "Reloj Garmin Forerunner 55",
+             "Garmin Forerunner 55",
+             "GPS e modos de corrida, ciclismo e piscina para o triathlon.", "GPS with run, bike and pool modes for triathlon.", "GPS con modos de carrera, ciclismo y piscina para triatlón."),
+    ],
+    "ombro-nadador": [
         item("Kit de faixas elásticas Acte Sports", "Acte Sports resistance band set", "Kit de bandas elásticas Acte Sports",
              "kit faixas elásticas Acte Sports",
-             "Ocupa quase nenhum espaço e serve para treinar o corpo todo.", "Takes almost no space and trains the whole body.", "Casi no ocupa espacio y entrena todo el cuerpo."),
-        item("Tapete de yoga Acte Sports", "Acte Sports yoga mat", "Esterilla de yoga Acte Sports",
-             "tapete de yoga Acte Sports",
-             "Base firme e antiderrapante para alongar e treinar no chão.", "A firm, non-slip base for floor workouts.", "Base firme y antideslizante para entrenar en el suelo."),
-        item("Par de halteres emborrachados Kikos", "Kikos rubber dumbbell pair", "Par de mancuernas Kikos",
-             "par de halteres emborrachados Kikos",
-             "Para evoluir a força com carga, de uma marca tradicional de fitness.", "To build strength with weights, from a trusted fitness brand.", "Para ganar fuerza con peso, de una marca tradicional."),
+             "Fortalece os músculos que estabilizam o ombro, em poucos minutos.", "Strengthens shoulder stabilizers in minutes.", "Fortalece los estabilizadores del hombro en minutos."),
+        item("Rolo de liberação miofascial Acte Sports", "Acte Sports foam roller", "Rodillo miofascial Acte Sports",
+             "rolo de liberação miofascial Acte Sports",
+             "Solta a musculatura depois dos treinos mais pesados.", "Loosens muscles after hard sessions.", "Suelta la musculatura tras los entrenos duros."),
+        item("Pistola de massagem Relaxmedic", "Relaxmedic massage gun", "Pistola de masaje Relaxmedic",
+             "pistola de massagem Relaxmedic",
+             "Massagem profunda para recuperar ombros e costas.", "Deep massage to recover shoulders and back.", "Masaje profundo para recuperar hombros y espalda."),
     ],
-    "roupa-de-treino": [
-        item("Camiseta de treino dry Olympikus", "Olympikus dry training T-shirt", "Camiseta deportiva dry Olympikus",
-             "camiseta dry fit Olympikus masculina feminina",
-             "Tecido leve que seca rápido, ótimo para começar.", "Light quick-dry fabric, great to start.", "Tejido ligero de secado rápido, ideal para empezar."),
-        item("Camiseta de treino Adidas", "Adidas training T-shirt", "Camiseta de entrenamiento Adidas",
-             "camiseta treino Adidas",
-             "Conforto e durabilidade de uma marca que todo mundo conhece.", "Comfort and durability from a brand everyone knows.", "Comodidad y durabilidad de una marca reconocida."),
-        item("Tênis de corrida Olympikus Corre", "Olympikus Corre running shoes", "Zapatillas de running Olympikus Corre",
-             "tênis Olympikus Corre",
-             "Para quem corre ou caminha: o tênis é o item que mais faz diferença.", "For runners and walkers: shoes make the biggest difference.", "Para correr o caminar: las zapatillas marcan la diferencia."),
+    # ---------------------------------------------------------------- Nutrição
+    "energia-prova": [
+        item("Gel de carboidrato Max Titanium", "Max Titanium carb gel", "Gel de carbohidratos Max Titanium",
+             "gel de carboidrato Max Titanium",
+             "Energia rápida e fácil de levar no bolso.", "Quick energy that fits in a pocket.", "Energía rápida y fácil de llevar."),
+        item("Repositor hidroeletrolítico Integralmedica", "Integralmedica electrolyte drink", "Reponedor hidroelectrolítico Integralmedica",
+             "repositor hidroeletrolítico Integralmedica",
+             "Repõe sais minerais nos treinos longos e no calor.", "Replaces electrolytes on long sessions and in heat.", "Repone sales en entrenos largos y con calor."),
+        item("Garrafa térmica Stanley Quencher", "Stanley Quencher tumbler", "Vaso térmico Stanley Quencher",
+             "copo térmico Stanley Quencher",
+             "Água gelada o treino inteiro, de uma marca que virou febre.", "Cold water all session long, from a cult brand.", "Agua fría todo el entreno, de una marca de moda."),
     ],
-    "suplementos": [
+    "proteina-creatina": [
         item("Creatina monohidratada Max Titanium", "Max Titanium creatine monohydrate", "Creatina monohidratada Max Titanium",
              "creatina monohidratada Max Titanium 300g",
              "O suplemento mais estudado para força, de marca nacional consolidada.", "The most researched strength supplement, from an established brand.", "El suplemento más estudiado para la fuerza, de marca consolidada."),
@@ -66,195 +157,32 @@ CURADORIA: dict[str, list[dict[str, Any]]] = {
              "whey protein isolado Dux Nutrition",
              "Mais pureza e menos lactose, para quem quer o mais completo.", "Higher purity and less lactose for the most complete option.", "Más pureza y menos lactosa, para la opción más completa."),
     ],
-    # ---------------------------------------------------------------- Saúde corporal
-    "dores-nas-costas": [
-        item("Almofada lombar para cadeira Duoflex", "Duoflex lumbar support cushion", "Cojín lumbar para silla Duoflex",
-             "almofada lombar cadeira Duoflex",
-             "Apoia a curva das costas para quem passa horas sentado.", "Supports your lower back during long hours seated.", "Apoya la zona lumbar en largas horas sentado."),
-        item("Massageador elétrico Relaxmedic", "Relaxmedic electric massager", "Masajeador eléctrico Relaxmedic",
-             "massageador elétrico Relaxmedic",
-             "Alívio da tensão no pescoço e nos ombros, de marca brasileira conhecida.", "Relieves neck and shoulder tension, from a known Brazilian brand.", "Alivia la tensión de cuello y hombros, de una marca brasileña conocida."),
-        item("Pistola de massagem Relaxmedic", "Relaxmedic massage gun", "Pistola de masaje Relaxmedic",
-             "pistola de massagem Relaxmedic",
-             "Massagem profunda para músculos cansados depois do dia ou do treino.", "Deep massage for tired muscles after work or training.", "Masaje profundo para músculos cansados."),
+    # ---------------------------------------------------------------- Mente do atleta
+    "ansiedade-prova": [
+        item("Livro Mindset (Carol Dweck)", "Mindset by Carol Dweck", "Libro Mindset (Carol Dweck)",
+             "livro Mindset Carol Dweck",
+             "Ensina a encarar a prova como desafio, não como ameaça.", "Teaches you to see a race as a challenge, not a threat.", "Enseña a ver la prueba como reto, no como amenaza."),
+        item("Livro O Jogo Interior do Tênis (Timothy Gallwey)", "The Inner Game of Tennis", "Libro El juego interior del tenis",
+             "livro O Jogo Interior do Tênis Gallwey",
+             "Clássico sobre calar a mente e confiar no corpo, útil em qualquer esporte.", "A classic on quieting the mind, useful in any sport.", "Un clásico sobre calmar la mente, útil en cualquier deporte."),
+        item("Livro Psicologia do Esporte e do Exercício (Weinberg e Gould)", "Foundations of Sport and Exercise Psychology", "Libro Fundamentos de psicología del deporte",
+             "livro Psicologia do Esporte e do Exercício Weinberg",
+             "A referência acadêmica, para quem quer se aprofundar.", "The academic reference for those who want depth.", "La referencia académica para profundizar."),
     ],
-    "acompanhar-peso": [
-        item("Balança digital Multilaser", "Multilaser digital scale", "Báscula digital Multilaser",
-             "balança digital banheiro Multilaser",
-             "Simples e precisa para acompanhar o peso no dia a dia.", "Simple and accurate for everyday weighing.", "Sencilla y precisa para el día a día."),
-        item("Balança de bioimpedância Xiaomi Mi Body Composition Scale 2", "Xiaomi Mi Body Composition Scale 2", "Báscula de bioimpedancia Xiaomi Mi Body Composition Scale 2",
-             "Xiaomi Mi Body Composition Scale 2",
-             "Mostra gordura, músculo e guarda o histórico no aplicativo.", "Shows fat and muscle, and saves history in the app.", "Muestra grasa y músculo y guarda el historial en la app."),
-        item("Balança de bioimpedância Omron", "Omron body composition scale", "Báscula de bioimpedancia Omron",
-             "balança bioimpedância Omron",
-             "Marca de referência em saúde, para medições mais completas.", "A health reference brand for fuller measurements.", "Marca de referencia en salud para mediciones más completas."),
-    ],
-    # ---------------------------------------------------------------- Bem-estar
-    "dormir-melhor": [
-        item("Protetor auricular de espuma 3M", "3M foam earplugs", "Tapones de espuma 3M",
-             "protetor auricular espuma 3M",
-             "Bloqueia o barulho por pouco dinheiro.", "Blocks noise for very little money.", "Bloquea el ruido por muy poco dinero."),
-        item("Máscara de dormir 3D", "3D sleep mask", "Antifaz para dormir 3D",
-             "máscara de dormir 3D blackout",
-             "Escuridão total sem pressionar os olhos.", "Total darkness without pressing on the eyes.", "Oscuridad total sin presionar los ojos."),
-        item("Travesseiro viscoelástico Duoflex", "Duoflex memory foam pillow", "Almohada viscoelástica Duoflex",
-             "travesseiro viscoelástico Duoflex",
-             "Apoio correto para o pescoço, de marca brasileira de referência.", "Proper neck support from a leading Brazilian brand.", "Buen apoyo para el cuello, de una marca brasileña de referencia."),
-    ],
-    "relaxar-em-casa": [
-        item("Óleo essencial de lavanda Via Aroma", "Via Aroma lavender essential oil", "Aceite esencial de lavanda Via Aroma",
-             "óleo essencial lavanda Via Aroma",
-             "O aroma mais usado para relaxar, de marca brasileira.", "The classic relaxing scent, from a Brazilian brand.", "El aroma clásico para relajarse, de una marca brasileña."),
-        item("Difusor de aromas elétrico Via Aroma", "Via Aroma electric diffuser", "Difusor eléctrico Via Aroma",
-             "difusor elétrico ultrassônico Via Aroma",
-             "Espalha o aroma pelo ambiente com luz suave.", "Spreads scent through the room with soft light.", "Difunde el aroma por la habitación con luz suave."),
-        item("Umidificador de ar Philco", "Philco air humidifier", "Humidificador Philco",
-             "umidificador de ar Philco",
-             "Ar mais agradável, principalmente nos dias secos.", "More comfortable air, especially on dry days.", "Aire más agradable, sobre todo en días secos."),
-    ],
-    # ---------------------------------------------------------------- Casa
-    "cozinha-organizada": [
-        item("Organizador de gaveta Ordene", "Ordene drawer organizer", "Organizador de cajón Ordene",
-             "organizador de gaveta Ordene",
-             "Talheres e utensílios no lugar, de marca especialista em organização.", "Cutlery in place, from an organization specialist.", "Cubiertos en su lugar, de una marca especialista."),
-        item("Kit de potes herméticos Electrolux", "Electrolux airtight container set", "Kit de recipientes herméticos Electrolux",
-             "kit potes herméticos Electrolux",
-             "Mantimentos protegidos e armário organizado.", "Protected food and a tidy cupboard.", "Alimentos protegidos y despensa ordenada."),
-        item("Porta-temperos giratório Ordene", "Ordene rotating spice rack", "Especiero giratorio Ordene",
-             "porta temperos giratório Ordene",
-             "Todos os temperos à mão em pouco espaço.", "All spices at hand in little space.", "Todas las especias a mano en poco espacio."),
-    ],
-    "limpeza-facil": [
-        item("Mop giratório Flash Limp", "Flash Limp spin mop", "Mopa giratoria Flash Limp",
-             "mop giratório Flash Limp",
-             "Limpa o chão rápido, sem molhar as mãos.", "Cleans floors fast without wet hands.", "Limpia el suelo rápido sin mojarte las manos."),
-        item("Aspirador de pó vertical Electrolux", "Electrolux stick vacuum", "Aspiradora vertical Electrolux",
-             "aspirador de pó vertical Electrolux",
-             "Leve e prático para o dia a dia, de marca tradicional.", "Light and handy for daily use, from a trusted brand.", "Ligera y práctica a diario, de marca tradicional."),
-        item("Robô aspirador WAP", "WAP robot vacuum", "Robot aspirador WAP",
-             "robô aspirador WAP",
-             "Aspira sozinho enquanto você cuida de outras coisas.", "Vacuums on its own while you do other things.", "Aspira solo mientras haces otras cosas."),
-    ],
-    # ---------------------------------------------------------------- Pet
-    "pet-sozinho-em-casa": [
-        item("Fonte bebedouro para gatos Furacão Pet", "Furacão Pet cat water fountain", "Fuente bebedero para gatos Furacão Pet",
-             "fonte bebedouro gato Furacão Pet",
-             "Água fresca e corrente o dia todo, de marca pet brasileira.", "Fresh running water all day, from a Brazilian pet brand.", "Agua fresca todo el día, de marca brasileña de mascotas."),
-        item("Comedouro automático Petkit", "Petkit automatic feeder", "Comedero automático Petkit",
-             "comedouro automático Petkit",
-             "Refeições nos horários certos, mesmo com você fora.", "Meals on schedule even when you're away.", "Comidas a su hora aunque no estés."),
-        item("Comedouro automático Xiaomi", "Xiaomi smart pet feeder", "Comedero inteligente Xiaomi",
-             "comedouro automático Xiaomi pet feeder",
-             "Controle pelo celular e acompanhamento das refeições.", "Phone control and meal tracking.", "Control desde el móvil y seguimiento de comidas."),
-    ],
-    "passeio-seguro": [
-        item("Guia retrátil Flexi", "Flexi retractable leash", "Correa retráctil Flexi",
-             "guia retrátil Flexi",
-             "Liberdade para o cachorro com controle para você.", "Freedom for your dog, control for you.", "Libertad para tu perro y control para ti."),
-        item("Peitoral para cachorro Furacão Pet", "Furacão Pet dog harness", "Arnés para perro Furacão Pet",
-             "peitoral cachorro Furacão Pet",
-             "Distribui melhor a força e protege o pescoço.", "Spreads pressure and protects the neck.", "Reparte la fuerza y protege el cuello."),
-        item("Peitoral Zee.Dog", "Zee.Dog harness", "Arnés Zee.Dog",
-             "peitoral Zee.Dog",
-             "Design e acabamento de uma das marcas pet mais queridas do Brasil.", "Design and quality from a beloved Brazilian pet brand.", "Diseño y calidad de una marca de mascotas muy querida en Brasil."),
-    ],
-    # ---------------------------------------------------------------- Eletrônicos
-    "fone-sem-fio": [
-        item("Fone sem fio JBL Wave Buds", "JBL Wave Buds wireless earbuds", "Auriculares inalámbricos JBL Wave Buds",
-             "JBL Wave Buds",
-             "Som JBL com preço de entrada e boa bateria.", "JBL sound at an entry price with good battery.", "Sonido JBL a precio de entrada y buena batería."),
-        item("Fone sem fio Samsung Galaxy Buds FE", "Samsung Galaxy Buds FE", "Auriculares Samsung Galaxy Buds FE",
-             "Samsung Galaxy Buds FE",
-             "Cancelamento de ruído e conforto para o dia inteiro.", "Noise cancelling and all-day comfort.", "Cancelación de ruido y comodidad todo el día."),
-        item("Fone sem fio JBL Tune Beam", "JBL Tune Beam earbuds", "Auriculares JBL Tune Beam",
-             "JBL Tune Beam",
-             "Mais recursos: cancelamento de ruído e resistência a água e poeira.", "More features: noise cancelling and water/dust resistance.", "Más funciones: cancelación de ruido y resistencia al agua y polvo."),
-    ],
-    "bateria-do-celular": [
-        item("Carregador portátil Geonav 10.000 mAh", "Geonav 10,000 mAh power bank", "Batería portátil Geonav 10.000 mAh",
-             "carregador portátil Geonav 10000mAh",
-             "Duas cargas completas no bolso, de marca nacional.", "Two full charges in your pocket, from a Brazilian brand.", "Dos cargas completas en el bolsillo, de marca brasileña."),
-        item("Carregador portátil Xiaomi 10.000 mAh", "Xiaomi 10,000 mAh power bank", "Batería portátil Xiaomi 10.000 mAh",
-             "power bank Xiaomi 10000mAh",
-             "Fino, confiável e com carregamento rápido.", "Slim, reliable and fast-charging.", "Delgada, fiable y con carga rápida."),
-        item("Carregador portátil Anker 20.000 mAh", "Anker 20,000 mAh power bank", "Batería portátil Anker 20.000 mAh",
-             "Anker power bank 20000mAh",
-             "Bateria para vários dias ou para carregar mais de um aparelho.", "Power for days or several devices.", "Energía para varios días o varios dispositivos."),
-    ],
-    "som-para-reunir": [
-        item("Caixa de som JBL Go 4", "JBL Go 4 speaker", "Altavoz JBL Go 4",
-             "JBL Go 4",
-             "Pequena, à prova d'água e com o som que todo mundo conhece.", "Small, waterproof and with the sound everyone knows.", "Pequeño, resistente al agua y con sonido JBL."),
-        item("Caixa de som JBL Flip 6", "JBL Flip 6 speaker", "Altavoz JBL Flip 6",
-             "JBL Flip 6",
-             "Som potente para churrasco e viagem, à prova d'água.", "Powerful waterproof sound for barbecues and trips.", "Sonido potente y resistente al agua para asados y viajes."),
-        item("Caixa de som JBL Charge 5", "JBL Charge 5 speaker", "Altavoz JBL Charge 5",
-             "JBL Charge 5",
-             "Mais potência e bateria longa, ainda carrega o celular.", "More power, long battery, and charges your phone.", "Más potencia, batería larga y carga tu móvil."),
+    "disciplina-treino": [
+        item("Livro Hábitos Atômicos (James Clear)", "Atomic Habits by James Clear", "Libro Hábitos atómicos (James Clear)",
+             "livro Hábitos Atômicos",
+             "Como criar a rotina de treino que se mantém sozinha.", "How to build a training routine that sticks.", "Cómo crear una rutina de entrenamiento que se mantenga."),
+        item("Livro Nascido para Correr (Christopher McDougall)", "Born to Run by Christopher McDougall", "Libro Nacidos para correr",
+             "livro Nascido para Correr",
+             "História inspiradora sobre o prazer de treinar.", "An inspiring story about the joy of training.", "Una historia inspiradora sobre el placer de entrenar."),
+        item("Livro Do que eu falo quando eu falo de corrida (Haruki Murakami)", "What I Talk About When I Talk About Running", "Libro De qué hablo cuando hablo de correr",
+             "livro Do que eu falo quando eu falo de corrida",
+             "Reflexão sobre disciplina e constância de um escritor que virou triatleta.", "A writer-turned-triathlete on discipline and consistency.", "Un escritor triatleta reflexiona sobre disciplina y constancia."),
     ],
 }
 
-
-# Presentes de Natal: produtos próprios, que não se repetem nas outras páginas.
-CURADORIA.update({
-    "presente-musica": [
-        item("Fone de ouvido JBL Tune 520BT", "JBL Tune 520BT headphones", "Auriculares JBL Tune 520BT",
-             "JBL Tune 520BT",
-             "Fone sem fio confortável, com bateria para a semana toda.", "Comfortable wireless headphones with week-long battery.", "Auriculares inalámbricos cómodos, con batería para toda la semana."),
-        item("Echo Pop com Alexa", "Echo Pop with Alexa", "Echo Pop con Alexa",
-             "Echo Pop Alexa",
-             "Música por comando de voz e ajuda no dia a dia.", "Voice-controlled music and everyday help.", "Música por voz y ayuda en el día a día."),
-        item("Caixa de som JBL Clip 5", "JBL Clip 5 speaker", "Altavoz JBL Clip 5",
-             "JBL Clip 5",
-             "Leva para qualquer lugar: prende na mochila e é à prova d'água.", "Clips onto a bag and is waterproof.", "Se engancha en la mochila y es resistente al agua."),
-    ],
-    "presente-treino": [
-        item("Mochila Nike Brasilia", "Nike Brasilia backpack", "Mochila Nike Brasilia",
-             "mochila Nike Brasilia",
-             "Clássica para levar tudo à academia.", "A classic for carrying everything to the gym.", "Clásica para llevar todo al gimnasio."),
-        item("Copo térmico Stanley Quencher", "Stanley Quencher tumbler", "Vaso térmico Stanley Quencher",
-             "copo térmico Stanley Quencher",
-             "Água gelada o treino inteiro, de uma marca que virou febre.", "Cold water all workout long, from a cult brand.", "Agua fría todo el entrenamiento, de una marca de moda."),
-        item("Relógio Garmin Forerunner 55", "Garmin Forerunner 55 watch", "Reloj Garmin Forerunner 55",
-             "Garmin Forerunner 55",
-             "GPS e planos de treino de uma marca referência em corrida.", "GPS and training plans from a running leader.", "GPS y planes de entrenamiento de una marca líder en running."),
-    ],
-    "presente-pet": [
-        item("Brinquedo KONG Classic", "KONG Classic toy", "Juguete KONG Classic",
-             "brinquedo KONG Classic",
-             "O brinquedo resistente mais famoso do mundo pet.", "The world's best-known tough pet toy.", "El juguete resistente más famoso del mundo pet."),
-        item("Escova FURminator", "FURminator brush", "Cepillo FURminator",
-             "escova FURminator",
-             "Menos pelo pela casa e um pet mais confortável.", "Less shedding at home and a happier pet.", "Menos pelo en casa y una mascota más cómoda."),
-        item("Caixa de transporte Ferplast", "Ferplast pet carrier", "Transportín Ferplast",
-             "caixa de transporte Ferplast",
-             "Viagens e idas ao veterinário com segurança.", "Safe trips and vet visits.", "Viajes y visitas al veterinario con seguridad."),
-    ],
-    "presente-casa": [
-        item("Air fryer Mondial", "Mondial air fryer", "Freidora de aire Mondial",
-             "air fryer Mondial",
-             "Comida crocante com menos óleo, de uma marca presente em todo o Brasil.", "Crispy food with less oil, from a household brand.", "Comida crujiente con menos aceite, de una marca muy conocida."),
-        item("Jogo de panelas Tramontina", "Tramontina cookware set", "Juego de ollas Tramontina",
-             "jogo de panelas Tramontina",
-             "Qualidade brasileira que dura muitos anos.", "Brazilian quality that lasts for years.", "Calidad brasileña que dura muchos años."),
-        item("Cafeteira Nespresso Essenza Mini", "Nespresso Essenza Mini coffee maker", "Cafetera Nespresso Essenza Mini",
-             "Nespresso Essenza Mini",
-             "Café de cafeteria em casa, em segundos.", "Café-quality coffee at home in seconds.", "Café de cafetería en casa, en segundos."),
-    ],
-    "presente-tecnologia": [
-        item("Fire TV Stick", "Fire TV Stick", "Fire TV Stick",
-             "Fire TV Stick",
-             "Transforma qualquer TV em smart TV.", "Turns any TV into a smart TV.", "Convierte cualquier TV en smart TV."),
-        item("Smartwatch Amazfit Bip 5", "Amazfit Bip 5 smartwatch", "Reloj inteligente Amazfit Bip 5",
-             "Amazfit Bip 5",
-             "Notificações, saúde e bateria de vários dias.", "Notifications, health tracking and multi-day battery.", "Notificaciones, salud y batería de varios días."),
-        item("Kindle", "Kindle", "Kindle",
-             "Kindle 11ª geração",
-             "Uma biblioteca inteira na mão, com leitura que descansa os olhos.", "A whole library in hand, easy on the eyes.", "Toda una biblioteca en la mano, con lectura que descansa la vista."),
-    ],
-})
-
-# Páginas que reaproveitam produtos de outras (nenhuma hoje: presentes têm produtos próprios).
+# Páginas que reaproveitam produtos de outras (nenhuma hoje).
 REFERENCIAS: dict[str, list[str]] = {}
 
 
@@ -267,32 +195,36 @@ LOJA_ML = "Mercado Livre"
 
 
 def _aplicar_mercadolivre(db: Session) -> int:
-    """Mesmo produto, segunda loja: oferta do Mercado Livre com a mesma chave da curadoria."""
+    """Mesmo produto, segunda loja: oferta do Mercado Livre para cada item da curadoria que tem link
+    de afiliado gerado (LINKS_ML, por termo de busca)."""
     from .curadoria_ml import LINKS_ML
-    itens = {f"{slug}:{n}": it for slug, lista in CURADORIA.items() for n, it in enumerate(lista)}
     existentes = {o.external_product_id: o for o in db.scalars(select(Oferta).where(Oferta.platform == PLATAFORMA_ML))}
+    usados: set[str] = set()
     criadas = 0
-    for ext, link in LINKS_ML.items():
-        it = itens.get(ext)
-        if it is None:
-            continue
-        o = existentes.get(ext)
-        if o is None:
-            o = Oferta(id=new_id(), platform=PLATAFORMA_ML, external_product_id=ext, source="curadoria")
-            db.add(o)
-            criadas += 1
-        o.title = it["titulo"]["pt"][:200]
-        o.description = it["motivo"]["pt"]
-        o.translations = {l: {"title": it["titulo"][l], "description": it["motivo"][l]} for l in ("pt", "en", "es")}
-        o.kind, o.provider, o.market, o.language, o.currency = "afiliado", LOJA_ML, "BR", "pt", "BRL"
-        o.destination_url = link
-        o.subid_param = None
-        o.image_url, o.price = "", None
-        o.category = "curadoria > " + ext.split(":")[0]
-        o.active = o.published = True
-        flag_modified(o, "translations")
+    for slug, lista in CURADORIA.items():
+        for n, it in enumerate(lista):
+            link = LINKS_ML.get(it["busca"])
+            if not link:
+                continue
+            ext = f"{slug}:{n}"
+            usados.add(ext)
+            o = existentes.get(ext)
+            if o is None:
+                o = Oferta(id=new_id(), platform=PLATAFORMA_ML, external_product_id=ext, source="curadoria")
+                db.add(o)
+                criadas += 1
+            o.title = it["titulo"]["pt"][:200]
+            o.description = it["motivo"]["pt"]
+            o.translations = {l: {"title": it["titulo"][l], "description": it["motivo"][l]} for l in ("pt", "en", "es")}
+            o.kind, o.provider, o.market, o.language, o.currency = "afiliado", LOJA_ML, "BR", "pt", "BRL"
+            o.destination_url = link
+            o.subid_param = None
+            o.image_url, o.price = "", None
+            o.category = "curadoria > " + slug
+            o.active = o.published = True
+            flag_modified(o, "translations")
     for ext, o in existentes.items():
-        if ext not in LINKS_ML:
+        if ext not in usados:
             o.active = False
     return criadas
 

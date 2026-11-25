@@ -1,8 +1,43 @@
 import { Link } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
-const copy={
-pt:{tag:"NOSSO PROPÓSITO",title:"Tecnologia que entende seu lugar no mundo.",lead:"O Robô Global nasce de uma ideia simples: uma boa escolha começa quando alguém se sente compreendido.",a:"Pessoas primeiro",b:"Clareza sempre",c:"Confiança construída",body:"Não queremos que você se adapte à tecnologia. Queremos que a experiência respeite suas necessidades, seu idioma e seu tempo.",disclosure:"Podemos receber comissões por indicações de parceiros. Isso não altera o compromisso com transparência e liberdade de escolha.",cta:"Descobrir caminhos"},
-en:{tag:"OUR PURPOSE",title:"Technology that makes room for you.",lead:"Robô Global is built on a simple idea: better choices start when people feel understood.",a:"People come first",b:"Clarity at every step",c:"Trust is earned",body:"You shouldn't have to adapt to technology. Your experience should respect your needs, your language and your pace.",disclosure:"We may earn commissions from partner referrals. Transparency and your freedom to choose remain essential.",cta:"Explore possibilities"},
-es:{tag:"NUESTRO PROPÓSITO",title:"Tecnología que te hace un lugar.",lead:"Robô Global parte de una idea sencilla: las mejores decisiones nacen cuando las personas se sienten comprendidas.",a:"Primero, las personas",b:"Claridad en cada paso",c:"La confianza se construye",body:"No tienes que adaptarte a la tecnología. La experiencia debe respetar tus necesidades, tu idioma y tu ritmo.",disclosure:"Podemos recibir comisiones por recomendaciones de socios. La transparencia y tu libertad de elegir siguen siendo fundamentales.",cta:"Descubrir posibilidades"}
+
+const copy = {
+  pt: { tag: "QUEM SOMOS", title: "Feito por quem vive o esporte.",
+    lead: "O Robô Global é uma iniciativa da Cremeni para ajudar nadadores e triatletas a escolher melhor: o que considerar, e três boas opções de marcas conhecidas para cada situação do treino e da prova.",
+    blocos: [
+      ["Cremeni", "Uma empresa dedicada ao esporte e à vida ativa, com campanhas contra o sedentarismo e a favor da prática esportiva."],
+      ["Experiência com atletas e clubes", "A curadoria se apoia na experiência da Cremeni com atletas e clubes, incluindo a AGP Intelligence, sistema de avaliação longitudinal de atletas usado por clubes."],
+      ["Como escolhemos", "Só indicamos marcas conhecidas, vendidas por lojas em que você já confia. Explicamos o motivo de cada escolha e dizemos quando procurar um profissional."],
+    ],
+    cta: "Ver os temas" },
+  en: { tag: "ABOUT US", title: "Made by people who live sport.",
+    lead: "Robô Global is a Cremeni initiative to help swimmers and triathletes choose better: what to consider, and three good options from trusted brands for each training and racing situation.",
+    blocos: [
+      ["Cremeni", "A company dedicated to sport and active living, running campaigns against sedentary lifestyles."],
+      ["Experience with athletes and clubs", "Our picks draw on Cremeni's experience with athletes and clubs, including AGP Intelligence, a longitudinal athlete assessment system used by clubs."],
+      ["How we choose", "We only recommend well-known brands sold by stores you already trust. We explain every pick and tell you when to see a professional."],
+    ],
+    cta: "See topics" },
+  es: { tag: "QUIÉNES SOMOS", title: "Hecho por quienes viven el deporte.",
+    lead: "Robô Global es una iniciativa de Cremeni para ayudar a nadadores y triatletas a elegir mejor: qué tener en cuenta y tres buenas opciones de marcas conocidas para cada situación.",
+    blocos: [
+      ["Cremeni", "Una empresa dedicada al deporte y a la vida activa, con campañas contra el sedentarismo."],
+      ["Experiencia con atletas y clubes", "La selección se apoya en la experiencia de Cremeni con atletas y clubes, incluida AGP Intelligence, sistema de evaluación longitudinal de atletas usado por clubes."],
+      ["Cómo elegimos", "Solo recomendamos marcas conocidas, vendidas por tiendas en las que ya confías. Explicamos cada elección y te decimos cuándo buscar a un profesional."],
+    ],
+    cta: "Ver los temas" },
 };
-export default function Sobre(){const {lang}=useLanguage();const t=copy[lang];return <div className="rg-interior"><section className="rg-interior-hero"><span className="rg-kicker">{t.tag}</span><h1>{t.title}</h1><p>{t.lead}</p></section><section className="rg-interior-body"><div className="rg-topic-grid">{[t.a,t.b,t.c].map((item,i)=><article className="rg-topic" key={item}><span className="rg-path-number">0{i+1}</span><h2>{item}</h2></article>)}</div><p className="rg-about-body">{t.body}</p><p className="rg-about-disclosure">{t.disclosure}</p><Link className="rg-button rg-button-primary" to="/nichos">{t.cta} ↗</Link></section></div>}
+
+export default function Sobre() {
+  const { lang } = useLanguage(); const t = copy[lang];
+  return <div className="rg-store">
+    <section className="rg-store-hero"><div className="rg-store-inner">
+      <span className="rg-catalog-eyebrow">✳ {t.tag}</span><h1>{t.title}</h1><p>{t.lead}</p>
+    </div></section>
+    <div className="rg-store-inner rg-store-body">
+      <div className="rg-problemas">{t.blocos.map(([titulo, texto]) =>
+        <article className="rg-problema-card" key={titulo}><strong>{titulo}</strong><span>{texto}</span></article>)}</div>
+      <p className="rg-store-more"><Link className="rg-retry" to="/">{t.cta} →</Link></p>
+    </div>
+  </div>;
+}

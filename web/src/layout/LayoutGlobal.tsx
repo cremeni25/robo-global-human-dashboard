@@ -1,7 +1,7 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
 const labels={pt:["Início","Sobre"],en:["Home","About"],es:["Inicio","Acerca de"]};
-const rodape={pt:"Produtos vendidos e entregues pelas lojas parceiras Amazon e Mercado Livre. Como Associado da Amazon, o Robô Global recebe por compras qualificadas.",en:"Products sold and shipped by partner stores Amazon and Mercado Livre. As an Amazon Associate, Robô Global earns from qualifying purchases.",es:"Productos vendidos y enviados por las tiendas asociadas Amazon y Mercado Livre. Como Afiliado de Amazon, Robô Global recibe ingresos por compras válidas."};
+const rodape={pt:"Uma iniciativa Cremeni. Produtos vendidos e entregues pelas lojas parceiras Amazon e Mercado Livre. Como Associado da Amazon, o Robô Global recebe por compras qualificadas.",en:"A Cremeni initiative. Products sold and shipped by partner stores Amazon and Mercado Livre. As an Amazon Associate, Robô Global earns from qualifying purchases.",es:"Una iniciativa de Cremeni. Productos vendidos y enviados por las tiendas asociadas Amazon y Mercado Livre. Como Afiliado de Amazon, Robô Global recibe ingresos por compras válidas."};
 export default function LayoutGlobal(){
  const {lang,setLang}=useLanguage();const loc=useLocation();
  const nav=[["/",""],["/sobre",""]];
