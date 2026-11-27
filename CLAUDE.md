@@ -35,7 +35,8 @@ Site: https://www.roboglobal.com.br · API: https://api.roboglobal.com.br · Pai
 - Só marcas conhecidas e lojas confiáveis; nada de produto duvidoso ou promessa milagrosa.
 - Confiança vem da experiência, não de falar de comissão: só uma linha discreta no rodapé
   (o aviso de Associado da Amazon é obrigatório).
-- Tudo na conta pessoal **Anderson** (não usar a conta CREMENI nas plataformas).
+- Tudo na conta pessoal **Anderson** (não usar a conta CREMENI nas plataformas). Exceção: na **Hotmart**
+  usar a conta já existente (iniciais "CI"), que já promove afiliados — decisão do dono em 27/11/2026.
 - Nunca pedir/mostrar senhas ou chaves no chat; segredos só no Render (Environment). Ler só nomes.
 - Nenhum acesso para terceiros (a social media não recebe senha nem acesso, nem de leitura).
 - Custos de IA amarrados a vendas (teto de teste US$ 5 + 10% das comissões).

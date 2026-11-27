@@ -1,4 +1,4 @@
-# HANDOFF — Robô Global (atualizado em 26/11/2026)
+# HANDOFF — Robô Global (atualizado em 27/11/2026)
 
 ## Pronto e funcionando (no ar)
 - Site só de **natação e triathlon**: 5 temas, 13 dores, 39 produtos (Speedo, Arena, Hammerhead,
@@ -20,12 +20,17 @@
   `api/app/curadoria_ml.py` (chave = `busca`), na MESMA ordem da lista.
 - **API do Mercado Livre (preço/foto/frete)**: bloqueada — DevCenter diz "No tenés permiso para crear
   aplicaciones". Dono vai pedir liberação à OpenPlatform (texto já fornecido).
-- **Produtos digitais (Hotmart/Eduzz/Monetizze)**: dono quer escolha 100% automática. Proposta:
-  Claude in Chrome num computador do dono (pendente resposta se tem computador) ou lista curta +
-  cliques em "Afiliar-se". Eduzz/Monetizze: ligar o postback quando houver 1º produto afiliado
+- **Produtos digitais (Hotmart/Eduzz/Monetizze)**: dono quer escolha 100% automática. Em 27/11/2026
+  o dono instalou o Claude in Chrome (extensão, painel lateral) e está rodando lá um roteiro pronto:
+  buscar no Mercado de Afiliados da Hotmart (natação, triathlon, corrida, endurance, psicologia do
+  esporte), até 8 produtos com nota ≥ 4, autor com credencial, sem promessa milagrosa; afiliar-se e
+  devolver tabela (nome, autor, ID, preço, comissão, status, hotlink). Ao receber a tabela: cadastrar
+  no site e mapear postback. A sessão na nuvem não alcança o Chrome do dono (sem Remote Control).
+  Conta Hotmart: a já existente (iniciais "CI"), que já promove afiliados — decisão do dono. Eduzz/Monetizze: ligar o postback quando houver 1º produto afiliado
   (mapear pelo evento de teste real; Hotmart já integrado).
 
 ## Próximos passos (prioridade)
+0. Receber a tabela de afiliações da Hotmart (Claude in Chrome) e cadastrar os produtos no site.
 1. Receber e cadastrar os 31 links do ML; publicar e conferir.
 2. Roteiro semanal da social media focado em natação/triathlon (links com utm por canal; "#publi").
 3. Produtos digitais de natação/triathlon/psicologia do esporte (afiliação + postbacks Eduzz/Monetizze).
@@ -59,6 +64,7 @@
   EDUZZ_WEBHOOK_*, MONETIZZE_WEBHOOK_*, ADMITAD_*, AWIN_*. Configs de código: AMAZON_TAG (padrão
   roboglobal-20), LOJAS_CONFIAVEIS (vazio), IMPORTAR_CATALOGOS=0, PROBLEMAS_AUTOMATICO=0,
   IA_TETO_TESTE_USD=5, IA_FRACAO_COMISSAO=0.10.
+- Hotmart: conta já existente (iniciais "CI"), usada por decisão do dono.
 - Afiliados: Amazon Associados `roboglobal-20` (dados fiscais PF concluídos); Mercado Livre
   etiqueta `naan132272` (identidade validada; comissões no Mercado Pago da conta Anderson).
 
